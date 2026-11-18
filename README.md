@@ -1,44 +1,44 @@
-# StreamVault
+# Katito
 
 <p align="center">
-	<a href="https://github.com/Davidona/StreamVault-IPTV/releases/latest/download/StreamVault.apk"><img src="https://img.shields.io/badge/Download-StreamVault.apk-2ea44f?style=for-the-badge&logo=android" alt="Download StreamVault APK" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/releases/latest/download/StreamVault.apk"><img src="https://img.shields.io/badge/Downloader-6443624-2563eb?style=for-the-badge&logo=android&logoColor=white" alt="Downloader code 6443624" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/releases/latest"><img src="https://img.shields.io/github/v/release/Davidona/StreamVault-IPTV?display_name=tag&style=for-the-badge&color=0f766e" alt="Latest StreamVault release" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/releases"><img src="https://img.shields.io/github/downloads/Davidona/StreamVault-IPTV/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
-	<a href="https://discord.gg/FrkumnnTz"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the StreamVault Discord" /></a>
+	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/releases/latest/download/Katito.apk"><img src="https://img.shields.io/badge/Download-Katito.apk-2ea44f?style=for-the-badge&logo=android" alt="Download Katito APK" /></a>
+	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/releases/latest"><img src="https://img.shields.io/github/v/release/katito0720-lab/StreamVault-IPTV?display_name=tag&style=for-the-badge&color=0f766e" alt="Latest Katito release" /></a>
+	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/releases"><img src="https://img.shields.io/github/downloads/katito0720-lab/StreamVault-IPTV/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
 	<a href="docs/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-View-2563eb?style=for-the-badge" alt="View changelog" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/Davidona/StreamVault-IPTV/release.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
+	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/actions/workflows/build-katito.yml"><img src="https://img.shields.io/github/actions/workflow/status/katito0720-lab/StreamVault-IPTV/build-katito.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
 	<a href="https://ko-fi.com/davidona"><img src="https://img.shields.io/badge/Support-Ko--fi-ff5f5f?style=for-the-badge&logo=kofi" alt="Support on Ko-fi" /></a>
-	<a href="LICENSE"><img src="https://img.shields.io/badge/License-StreamVault_OSL-0284c7?style=for-the-badge" alt="License" /></a>
+	<a href="docs/STREAMVAULT-LICENSE.txt"><img src="https://img.shields.io/badge/License-StreamVault_OSL-0284c7?style=for-the-badge" alt="License" /></a>
 </p>
 
-StreamVault is a TV-first media player for Android TV built with Kotlin, Jetpack Compose, Room, Hilt, and Media3.
+Katito is based on [StreamVault](https://github.com/Davidona/StreamVault-IPTV) by David Nashash (Davidona).
 
-It is designed for large playlists, remote-friendly browsing, fast provider switching, and a polished living-room playback experience. StreamVault supports `M3U` playlists, `Xtream Codes`, `Stalker Portal`, and `Jellyfin` providers, plus Stremio-compatible add-ons, with dedicated flows for `Live TV`, `Movies`, and `Series`.
+Katito is a TV-first media player for Android TV built with Kotlin, Jetpack Compose, Room, Hilt, and Media3.
 
-Built for Android TV first, StreamVault focuses on the things generic IPTV apps usually get wrong: D-pad navigation, quick channel movement, large-library organization, and a player that still feels good to use from the couch. Phone and tablet installs are also supported, but the primary UX target is TV.
+It is designed for large playlists, remote-friendly browsing, fast provider switching, and a polished living-room playback experience. Katito supports `M3U` playlists, `Xtream Codes`, `Stalker Portal`, and `Jellyfin` providers, plus Stremio-compatible add-ons, with dedicated flows for `Live TV`, `Movies`, and `Series`.
+
+Built for Android TV first, Katito focuses on the things generic IPTV apps usually get wrong: D-pad navigation, quick channel movement, large-library organization, and a player that still feels good to use from the couch. Phone and tablet installs are also supported, but the primary UX target is TV.
 
 ## Preview
 <p align="center">
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/LiveTV.png"><img src="docs/images/LiveTV.png" alt="Live TV" width="88%" /></a>
+	<a href="docs/images/LiveTV.png"><img src="docs/images/LiveTV.png" alt="Live TV" width="88%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/Movies.png"><img src="docs/images/Movies.png" alt="Movies" width="44%" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/MovieInfo.png"><img src="docs/images/MovieInfo.png" alt="Movie Details" width="44%" /></a>
+	<a href="docs/images/Movies.png"><img src="docs/images/Movies.png" alt="Movies" width="44%" /></a>
+	<a href="docs/images/MovieInfo.png"><img src="docs/images/MovieInfo.png" alt="Movie Details" width="44%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/Sports.png"><img src="docs/images/Sports.png" alt="Sports" width="88%" /></a>
+	<a href="docs/images/Sports.png"><img src="docs/images/Sports.png" alt="Sports" width="88%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/ChannelView.png"><img src="docs/images/ChannelView.png" alt="Channel Preview" width="44%" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/Guide.png"><img src="docs/images/Guide.png" alt="Guide" width="44%" /></a>
+	<a href="docs/images/ChannelView.png"><img src="docs/images/ChannelView.png" alt="Channel Preview" width="44%" /></a>
+	<a href="docs/images/Guide.png"><img src="docs/images/Guide.png" alt="Guide" width="44%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/StreamVault-IPTV/raw/master/docs/images/SeriesEpisodes.png"><img src="docs/images/SeriesEpisodes.png" alt="Series Episodes" width="44%" /></a>
+	<a href="docs/images/SeriesEpisodes.png"><img src="docs/images/SeriesEpisodes.png" alt="Series Episodes" width="44%" /></a>
 </p>
 
 ## Highlights
@@ -210,15 +210,13 @@ Built for Android TV first, StreamVault focuses on the things generic IPTV apps 
 
 ## Download
 
-- [Download latest StreamVault.apk](https://github.com/Davidona/StreamVault-IPTV/releases/latest/download/StreamVault.apk)
-- On Android TV, use Downloader code `6443624` to get StreamVault.
+- [Download latest Katito.apk](https://github.com/katito0720-lab/StreamVault-IPTV/releases/latest/download/Katito.apk)
 - The app can also detect and download newer releases in-app through GitHub Releases.
-- GitHub Actions still runs build and test validation on pushes and pull requests.
 - GitHub Releases are now published only when the workflow is started manually with `workflow_dispatch`, so versioned releases do not get created by mistake on every push.
 
 ## Support
 
-If StreamVault is useful to you, you can support development here:
+Support the original StreamVault developer, David Nashash (Davidona).
 
 - [Support on Ko-fi](https://ko-fi.com/davidona)
 
@@ -249,7 +247,7 @@ Useful commands:
 
 ## Notes
 
-- StreamVault is an IPTV client, not a content provider.
+- Katito is an IPTV client, not a content provider.
 - Use only playlists, streams, and guide sources you are authorized to access.
 - Local configuration and signing files are intentionally excluded from git.
 
@@ -258,4 +256,4 @@ Useful commands:
 This project was originally released without an explicit license.  
 As of April 2026, all usage, modification, and distribution are governed by the StreamVault Source-Available License (Non-Commercial).
 
-Any use of this project must comply with the terms defined in the LICENSE file.
+Any use of this project must comply with the terms in the [original StreamVault license](docs/STREAMVAULT-LICENSE.txt).

@@ -29,7 +29,7 @@ import com.streamvault.core.ui.theme.Secondary
 import com.streamvault.domain.manager.DriveAuthState
 
 private const val OPEN_SOURCE_LICENSES_URL =
-    "https://github.com/Davidona/StreamVault-IPTV/blob/master/docs/THIRD-PARTY-LICENSES.md"
+    "https://github.com/katito0720-lab/StreamVault-IPTV/blob/master/docs/THIRD-PARTY-LICENSES.md"
 
 public fun LazyListScope.settingsBackupSection(
     uiState: SettingsUiState,

@@ -18,9 +18,10 @@ jobs:
           set -e
           # App name everywhere in the UI (all languages)
           find . -path ./.git -prune -o -name "strings.xml" -path "*/src/main/res/*" -print0 | xargs -0 sed -i 's/StreamVault/Katito/g'
-          # Keep the credit the license requires
+          # Keep the original project credit and links
           sed -i 's|<string name="settings_build_desc">Katito for Android TV</string>|<string name="settings_build_desc">Katito for Android TV — based on StreamVault by David Nashash (Davidona)</string>|' feature/settings/src/main/res/values/strings.xml
           find feature/settings/src/main/res -name strings.xml -path "*values-*" -print0 | xargs -0 sed -i -E 's|(<string name="settings_build_desc">[^<]*)</string>|\1 — based on StreamVault</string>|'
+          find feature/settings/src/main/res -name strings.xml -print0 | xargs -0 sed -i 's|https://github.com/Davidona</string>|https://github.com/Davidona/StreamVault-IPTV</string>|g'
           # Hard-coded text in code
           sed -i "s/\"StreamVault couldn.t open your library\"/\"Katito couldn't open your library\"/" app/src/main/java/com/streamvault/app/MainActivity.kt
           sed -i 's/"StreamVault \${releaseInfo.versionName}"/"Katito ${releaseInfo.versionName}"/; s/Downloading the latest StreamVault update/Downloading the latest Katito update/; s/"StreamVault-\$sanitizedVersion.apk"/"Katito-$sanitizedVersion.apk"/' app/src/main/java/com/streamvault/app/update/AppUpdateInstaller.kt
@@ -153,9 +154,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="katito-build-${{ github.run_number }}"
+          METADATA=app/build/outputs/apk/release/output-metadata.json
+          VERSION=$(jq -er '.elements | select(length == 1) | .[0].versionName | select(length > 0)' "$METADATA")
+          CODE=$(jq -er '.elements[0].versionCode | numbers' "$METADATA")
+          TAG="katito-build-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}/v${VERSION}+${CODE}"
           gh release create "$TAG" out/Katito.apk \
             --repo "${{ github.repository }}" \
-            --title "Katito build ${{ github.run_number }}" \
+            --title "Katito $VERSION (build $CODE)" \
             --notes "Personal build of Katito (based on StreamVault by David Nashash). Download Katito.apk below." \
             --target "${{ github.sha }}"

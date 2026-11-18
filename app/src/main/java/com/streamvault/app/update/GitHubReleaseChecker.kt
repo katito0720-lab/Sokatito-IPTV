@@ -14,8 +14,8 @@ import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val GITHUB_RELEASES_LATEST_URL = "https://api.github.com/repos/Davidona/StreamVault-IPTV/releases/latest"
-private const val GITHUB_RELEASES_LIST_URL = "https://api.github.com/repos/Davidona/StreamVault-IPTV/releases?per_page=20"
+private const val GITHUB_RELEASES_LATEST_URL = "https://api.github.com/repos/katito0720-lab/StreamVault-IPTV/releases/latest"
+private const val GITHUB_RELEASES_LIST_URL = "https://api.github.com/repos/katito0720-lab/StreamVault-IPTV/releases?per_page=20"
 
 data class GitHubReleaseInfo(
     val versionName: String,
@@ -42,7 +42,7 @@ class GitHubReleaseChecker @Inject constructor(
             val request = Request.Builder()
                 .url(updateChannel.releaseApiUrl)
                 .header("Accept", "application/vnd.github+json")
-                .header("User-Agent", "StreamVault-Update-Checker")
+                .header("User-Agent", "Katito-Update-Checker")
                 .build()
 
             okHttpClient.newCall(request).execute().use { response ->
@@ -151,47 +151,26 @@ class GitHubReleaseChecker @Inject constructor(
 
     private fun findApkAsset(assets: org.json.JSONArray?, updateChannel: AppUpdateChannel): ReleaseApkAsset? {
         if (assets == null) return null
-        var fallback: ReleaseApkAsset? = null
+        val apkName = when (updateChannel) {
+            AppUpdateChannel.Stable -> "Katito.apk"
+            AppUpdateChannel.Beta -> "Katito-beta.apk"
+        }
         for (index in 0 until assets.length()) {
             val asset = assets.optJSONObject(index) ?: continue
-            val name = asset.optString("name")
-            val url = asset.optString("browser_download_url").takeIf { it.isNotBlank() } ?: continue
+            if (!asset.optString("name").equals(apkName, ignoreCase = true)) continue
+            val url = asset.optString("browser_download_url")
             if (!isHttpsUrl(url)) continue
-            val releaseAsset = ReleaseApkAsset(
+            return ReleaseApkAsset(
                 downloadUrl = url,
                 sha256 = parseReleaseAssetSha256Digest(asset.optString("digest"))
             )
-            when (updateChannel) {
-                AppUpdateChannel.Stable -> {
-                    if (name.equals("StreamVault.apk", ignoreCase = true)) {
-                        return releaseAsset
-                    }
-                    if (fallback == null &&
-                        name.endsWith(".apk", ignoreCase = true) &&
-                        !name.contains("beta", ignoreCase = true)
-                    ) {
-                        fallback = releaseAsset
-                    }
-                }
-                AppUpdateChannel.Beta -> {
-                    if (name.equals("StreamVault-beta.apk", ignoreCase = true)) {
-                        return releaseAsset
-                    }
-                    if (fallback == null &&
-                        name.endsWith(".apk", ignoreCase = true) &&
-                        name.contains("beta", ignoreCase = true)
-                    ) {
-                        fallback = releaseAsset
-                    }
-                }
-            }
         }
-        return fallback
+        return null
     }
 
 
     private fun parseTagVersionInfo(rawTagName: String): ParsedTagVersion {
-        val normalizedTag = rawTagName.trim()
+        val normalizedTag = rawTagName.substringAfterLast('/').trim()
         val structuredMatch = STRUCTURED_TAG_REGEX.matchEntire(normalizedTag)
         if (structuredMatch != null) {
             return ParsedTagVersion(
