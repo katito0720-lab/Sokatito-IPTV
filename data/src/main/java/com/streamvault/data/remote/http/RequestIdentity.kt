@@ -77,12 +77,12 @@ class DefaultUserAgentInterceptor(
 
 fun buildAppUserAgent(versionName: String?): String {
     val normalizedVersion = versionName?.trim().orEmpty().ifBlank { "dev" }
-    return "StreamVault/$normalizedVersion (Android; Media3; OkHttp)"
+    return "Sokatito/$normalizedVersion (Android; Media3; OkHttp)"
 }
 
 fun buildOpenSubtitlesUserAgent(versionName: String?): String {
     val normalizedVersion = versionName?.trim().orEmpty().ifBlank { "dev" }
-    return "StreamVault v$normalizedVersion"
+    return "Sokatito v$normalizedVersion"
 }
 
 fun buildAppRequestProfile(

@@ -89,7 +89,7 @@ private class TheSportsDbTestServer : AutoCloseable {
             config = config,
             descriptor = descriptor,
             store = store,
-            httpClient = SportsProviderHttpClient("StreamVault-tests"),
+            httpClient = SportsProviderHttpClient("Sokatito-tests"),
             cache = cache,
             endpointBaseUrl = endpointBaseUrl,
             allowInsecureHttp = true,

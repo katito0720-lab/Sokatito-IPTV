@@ -46,13 +46,13 @@ object BackupFileBridge {
                     MediaStore.MediaColumns.DISPLAY_NAME,
                     MediaStore.MediaColumns.DATE_MODIFIED,
                 )
-                val relativePath = Environment.DIRECTORY_DOWNLOADS + "/StreamVault/"
+                val downloads = Environment.DIRECTORY_DOWNLOADS
                 context.contentResolver.query(
                     MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                     projection,
-                    "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND " +
+                    "${MediaStore.MediaColumns.RELATIVE_PATH} IN (?, ?, ?) AND " +
                         "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?",
-                    arrayOf(relativePath, "$MANAGED_EXPORT_PREFIX%"),
+                    arrayOf("$downloads/Sokatito/", "$downloads/Katito/", "$downloads/StreamVault/", "$MANAGED_EXPORT_PREFIX%"),
                     "${MediaStore.MediaColumns.DATE_MODIFIED} DESC",
                 )?.use { cursor ->
                     val idIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
@@ -133,7 +133,7 @@ object BackupFileBridge {
                 put(MediaStore.MediaColumns.MIME_TYPE, MIME_TYPE_JSON)
                 put(
                     MediaStore.MediaColumns.RELATIVE_PATH,
-                    Environment.DIRECTORY_DOWNLOADS + "/StreamVault/"
+                    Environment.DIRECTORY_DOWNLOADS + "/Sokatito/"
                 )
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
@@ -322,7 +322,7 @@ object BackupFileBridge {
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        return Intent.createChooser(sendIntent, "Share StreamVault backup")
+        return Intent.createChooser(sendIntent, "Share Sokatito backup")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 

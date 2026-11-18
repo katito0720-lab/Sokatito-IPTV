@@ -38,7 +38,7 @@ class TraktLiveAccountInstrumentationTest {
             .readTimeout(20, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false).build()
         val productionApi = TraktApiClient(config, client,
-            userAgent = "StreamVault/${BuildConfig.VERSION_NAME}")
+            userAgent = "Sokatito/${BuildConfig.VERSION_NAME}")
         var refreshCount = 0
         val countedApi = object : TraktApi by productionApi {
             override suspend fun refresh(refreshToken: String): TraktTokens {

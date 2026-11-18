@@ -24,7 +24,7 @@ import org.junit.Test
 class SportsProviderHttpClientTest {
     private val server = MockWebServer()
     private val now = Instant.parse("2026-10-17T00:00:00Z")
-    private val client = SportsProviderHttpClient("StreamVault-test", Clock.fixed(now, ZoneOffset.UTC), 128)
+    private val client = SportsProviderHttpClient("Sokatito-test", Clock.fixed(now, ZoneOffset.UTC), 128)
     private val credentials = SportsProviderCredentials("private-key", "alice")
 
     @Before fun start() { server.start() }
@@ -44,7 +44,7 @@ class SportsProviderHttpClientTest {
             val result = get(mode)
             assertThat(result).isEqualTo(SportsProviderResult.Success("{}"))
             val request = server.takeRequest(5, TimeUnit.SECONDS)!!
-            assertThat(request.getHeader("User-Agent")).isEqualTo("StreamVault-test")
+            assertThat(request.getHeader("User-Agent")).isEqualTo("Sokatito-test")
             assertThat(request.getHeader("Accept")).isEqualTo("application/json")
             assertThat(request.getHeader("X-Api-Key"))
                 .isEqualTo(if (mode is SportsProviderAuth.ApiKeyHeader) "private-key" else null)

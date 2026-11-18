@@ -87,17 +87,17 @@ class StreamVaultMacrobenchmark {
             // macrobenchmark's tested APK remains the release package. Keep these trace metrics
             // process-agnostic so the lifecycle sections from that fixture are observable.
             TraceSectionMetric(
-                sectionName = "StreamVault.CategoryFlow.Build",
+                sectionName = "Sokatito.CategoryFlow.Build",
                 mode = TraceSectionMetric.Mode.Count,
                 label = "categoryBuildCount"
             ),
             TraceSectionMetric(
-                sectionName = "StreamVault.CategoryFlow.UpstreamStart",
+                sectionName = "Sokatito.CategoryFlow.UpstreamStart",
                 mode = TraceSectionMetric.Mode.Count,
                 label = "categoryUpstreamStartCount"
             ),
             TraceSectionMetric(
-                sectionName = "StreamVault.CategoryFlow.UpstreamStop",
+                sectionName = "Sokatito.CategoryFlow.UpstreamStop",
                 mode = TraceSectionMetric.Mode.Count,
                 label = "categoryUpstreamStopCount"
             ),

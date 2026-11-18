@@ -168,7 +168,7 @@ class CustomSportsProviderTest {
         val testClient = OkHttpClient.Builder()
             .sslSocketFactory(trustedCertificates.sslSocketFactory(), trustedCertificates.trustManager)
             .build()
-        httpClient = SportsProviderHttpClient("StreamVault-custom-test", clientOverride = testClient)
+        httpClient = SportsProviderHttpClient("Sokatito-custom-test", clientOverride = testClient)
         store = TestProviderStore()
     }
 

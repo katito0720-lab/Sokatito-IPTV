@@ -169,7 +169,7 @@ class OddsPapiProviderTest {
     )
 
     private fun httpClient() = SportsProviderHttpClient(
-        userAgent = "StreamVault-test",
+        userAgent = "Sokatito-test",
         clock = Clock.fixed(now, ZoneOffset.UTC),
     )
 

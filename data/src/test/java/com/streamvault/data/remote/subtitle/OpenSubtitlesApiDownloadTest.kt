@@ -103,7 +103,7 @@ class OpenSubtitlesApiDownloadTest {
             val anonymous = server.takeRequest()
             assertThat(anonymous.getHeader("Api-Key")).isEqualTo("test-api-key")
             assertThat(anonymous.getHeader("Authorization")).isNull()
-            assertThat(anonymous.getHeader("User-Agent")).isEqualTo("StreamVault vdev")
+            assertThat(anonymous.getHeader("User-Agent")).isEqualTo("Sokatito vdev")
             val authenticated = server.takeRequest()
             assertThat(authenticated.getHeader("Api-Key")).isEqualTo("test-api-key")
             assertThat(authenticated.getHeader("Authorization")).isEqualTo("Bearer user-token")

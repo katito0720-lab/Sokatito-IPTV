@@ -707,7 +707,7 @@ class DownloadManagerImpl @Inject constructor(
 
         val directory = File(
             context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir,
-            "StreamVault"
+            "Sokatito"
         ).apply { mkdirs() }
         val file = uniqueFile(directory, fileName)
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)

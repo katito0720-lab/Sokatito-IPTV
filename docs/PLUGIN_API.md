@@ -1,14 +1,14 @@
-# StreamVault Plugin API
+# Sokatito Plugin API
 
-StreamVault plugins are companion Android APKs. They do not inject code into the
-main application. Instead, StreamVault discovers installed APKs that expose a
+Sokatito plugins are companion Android APKs. They do not inject code into the
+main application. Instead, Sokatito discovers installed APKs that expose a
 bound service with the action `com.streamvault.plugin.API` and talks to them
 through Android `Messenger` IPC.
 
 This keeps the plugin boundary installable, removable, and compatible with
 Android package isolation while still allowing plugins to add provider, playback,
 Cast, and configuration capabilities. Configuration can be rendered by
-StreamVault from a declarative schema, or opened as a native plugin Activity when
+Sokatito from a declarative schema, or opened as a native plugin Activity when
 the plugin needs a richer UI.
 
 ## Package Discovery
@@ -36,12 +36,12 @@ Plugins can be installed from:
 
 - A direct HTTP/HTTPS APK URL.
 - A local APK selected with the system file picker.
-- Any manual Android package install. StreamVault detects it after refreshing the
+- Any manual Android package install. Sokatito detects it after refreshing the
   Plugins screen.
 
 ## Manifest
 
-StreamVault first asks the plugin service for its manifest. As a fallback, it
+Sokatito first asks the plugin service for its manifest. As a fallback, it
 reads `com.streamvault.plugin.MANIFEST_JSON` service metadata, then individual
 metadata fields if the JSON is missing or invalid.
 
@@ -54,7 +54,7 @@ Example manifest for host-rendered configuration:
   "name": "Example Plugin",
   "versionName": "1.0.0",
   "versionCode": 1,
-  "description": "Adds external capabilities to StreamVault.",
+  "description": "Adds external capabilities to Sokatito.",
   "providerName": "Example Provider",
   "configurationMode": "host.schema",
   "configurationActivityAction": "",
@@ -96,7 +96,7 @@ Recommended fallback metadata:
 <meta-data android:name="com.streamvault.plugin.NAME" android:value="Example Plugin" />
 <meta-data android:name="com.streamvault.plugin.VERSION_NAME" android:value="1.0.0" />
 <meta-data android:name="com.streamvault.plugin.VERSION_CODE" android:value="1" />
-<meta-data android:name="com.streamvault.plugin.DESCRIPTION" android:value="Adds external capabilities to StreamVault." />
+<meta-data android:name="com.streamvault.plugin.DESCRIPTION" android:value="Adds external capabilities to Sokatito." />
 <meta-data android:name="com.streamvault.plugin.PROVIDER_NAME" android:value="Example Provider" />
 <meta-data android:name="com.streamvault.plugin.CONFIGURATION_MODE" android:value="host.schema" />
 <meta-data android:name="com.streamvault.plugin.CONFIGURATION_ACTIVITY_ACTION" android:value="" />
@@ -109,14 +109,14 @@ For Activity configuration, set `CONFIGURATION_MODE` to `activity`, set
 ### `playbackUrlSchemes` / `playbackUrlHosts`
 
 Required for `playback.prepare` and `cast.rewriteUrl` to ever be invoked for
-normal host-bearing URLs. StreamVault only calls a plugin for these capabilities
+normal host-bearing URLs. Sokatito only calls a plugin for these capabilities
 if the plugin's manifest declares the URL's scheme and host — an absent or empty
 list means the plugin owns **no host-bearing** URLs, it is not treated as a
 wildcard match. Hostless custom URIs can be owned by scheme alone. Use `"*"` in
 either list to explicitly opt into matching every scheme or every host.
 
 This is a separate, earlier filter than the `handled` field described below:
-StreamVault first narrows to plugins whose declared scheme/host own the URL,
+Sokatito first narrows to plugins whose declared scheme/host own the URL,
 then sends `MSG_PREPARE_PLAYBACK` only to that narrowed set. A plugin that
 advertises `playback.prepare` but never declares `playbackUrlSchemes` /
 `playbackUrlHosts` will never receive `MSG_PREPARE_PLAYBACK` for host-bearing
@@ -133,15 +133,15 @@ must supply a full `MANIFEST_JSON` value to use `playback.prepare` or
 
 Capability names:
 
-- `provider.m3u`: the plugin can expose an M3U URL that StreamVault imports as a
+- `provider.m3u`: the plugin can expose an M3U URL that Sokatito imports as a
   provider when enabled.
 - `playback.prepare`: the plugin can prepare a stream URL before playback starts.
 - `cast.rewriteUrl`: the plugin can rewrite a playback URL before Google Cast
   loads it.
 - `configuration.schema`: the plugin exposes a declarative configuration schema
-  that StreamVault renders with its own UI.
+  that Sokatito renders with its own UI.
 - `configuration.activity`: the plugin exposes a native Android Activity that
-  StreamVault opens for configuration.
+  Sokatito opens for configuration.
 
 ## IPC Messages
 
@@ -173,15 +173,15 @@ Messages:
 | 10 | `MSG_RUN_CONFIGURATION_ACTION` | Run `configuration_action_id`. |
 | 11 | `MSG_STOP_PLAYBACK` | Release a prepared playback session identified by `output_url`. |
 
-For `playback.prepare` and `cast.rewriteUrl`, StreamVault only sends the message
+For `playback.prepare` and `cast.rewriteUrl`, Sokatito only sends the message
 to plugins whose manifest already owns the URL (see `playbackUrlSchemes` /
 `playbackUrlHosts` above). Within that narrowed set, plugins should still set
 `handled=false` when the specific URL is not one they can actually prepare.
-StreamVault then continues with other matching enabled plugins or the original
-URL. For `magnet:` inputs, StreamVault fails closed when no enabled plugin
+Sokatito then continues with other matching enabled plugins or the original
+URL. For `magnet:` inputs, Sokatito fails closed when no enabled plugin
 handles the link; the unresolved magnet is never passed to the player.
 
-`MSG_REWRITE_CAST_URL` is Cast-specific. StreamVault sends the stream context that
+`MSG_REWRITE_CAST_URL` is Cast-specific. Sokatito sends the stream context that
 made direct receiver playback unsafe:
 
 - `input_url`: original media URL.
@@ -197,10 +197,10 @@ Plugins should return a receiver-reachable `output_url` that no longer requires
 device-local URLs, app-only headers, app-only user agent handling, app proxy
 settings, or invalid TLS handling on the Cast receiver.
 
-`MSG_PREPARE_PLAYBACK` may also enrich the stream that StreamVault sends to the
+`MSG_PREPARE_PLAYBACK` may also enrich the stream that Sokatito sends to the
 player. When `handled=true` and `success=true`, the plugin can return:
 
-- `output_url`: final playable URL. If omitted, StreamVault keeps `input_url`.
+- `output_url`: final playable URL. If omitted, Sokatito keeps `input_url`.
 - `stream_type`: optional playback hint. Supported values are `DASH`, `HLS`,
   `SMOOTH_STREAMING`, `MPEG_TS`, `PROGRESSIVE`, and `RTSP`.
 - `headers_json`: JSON object with HTTP request headers for the media request.
@@ -224,14 +224,14 @@ For magnet playback, the host accepts a successful plugin response only when
 `output_url` is an HTTP URL on `127.0.0.1` with an explicit port. The plugin
 should bind its streaming server to loopback only. Torrent companion plugins
 should honor a `so` file-selection parameter when present. When playback ends,
-StreamVault sends `MSG_STOP_PLAYBACK` with the exact `output_url` returned by
+Sokatito sends `MSG_STOP_PLAYBACK` with the exact `output_url` returned by
 that plugin; the plugin should stop the matching session and release its
 foreground-service resources. Stop delivery is best effort, so the plugin must
 also clean up expired or abandoned sessions itself.
 
 `scheme` accepts `widevine`, `playready`, `clearkey`, or their platform UUID
 aliases (`com.widevine.alpha`, `com.microsoft.playready`, `org.w3.clearkey`).
-For `SMOOTH_STREAMING` + `clearkey`, StreamVault normalizes the ISML
+For `SMOOTH_STREAMING` + `clearkey`, Sokatito normalizes the ISML
 `ProtectionHeader` into ClearKey PSSH v1 init data before creating the Android
 MediaDrm session.
 
@@ -240,7 +240,7 @@ MediaDrm session.
 Plugins should choose one primary configuration mode.
 
 Use `host.schema` when the configuration is mostly fields, switches, selects, and
-simple actions. StreamVault owns the visual shell, validation placement, focus
+simple actions. Sokatito owns the visual shell, validation placement, focus
 behavior, typography, controls, and feedback.
 
 Use `activity` when the plugin needs a custom or highly interactive
@@ -252,10 +252,10 @@ configuration surface, for example:
 - Embedded logs.
 - Native pairing, sign-in, or device setup.
 - Custom layouts that must look the same when opened directly and from
-  StreamVault.
+  Sokatito.
 
 Do not advertise `configuration.schema` for a partial or stale schema. If
-`configurationMode` is `activity`, StreamVault treats the Activity as the active
+`configurationMode` is `activity`, Sokatito treats the Activity as the active
 configuration path and opens `configurationActivityAction` instead of loading a
 host-rendered schema.
 
@@ -266,7 +266,7 @@ set `configurationMode` explicitly.
 ## Host-Rendered Configuration
 
 Host-rendered configuration lets a plugin describe fields and actions while
-StreamVault owns the visual implementation.
+Sokatito owns the visual implementation.
 
 A plugin opts in with:
 
@@ -280,7 +280,7 @@ Schema response:
 {
   "schemaVersion": 1,
   "title": "Example Plugin",
-  "description": "Settings rendered by StreamVault.",
+  "description": "Settings rendered by Sokatito.",
   "sections": [
     {
       "id": "connection",
@@ -337,7 +337,7 @@ Schema response:
 
 Supported field types:
 
-- `info`: read-only text rendered by StreamVault.
+- `info`: read-only text rendered by Sokatito.
 - `text`: single-line text.
 - `password`: single-line secret text.
 - `url`: URL text field.
@@ -358,19 +358,19 @@ Values response:
 }
 ```
 
-For `MSG_SET_CONFIGURATION_VALUES`, StreamVault sends the same JSON object in
+For `MSG_SET_CONFIGURATION_VALUES`, Sokatito sends the same JSON object in
 `configuration_values_json`. Plugins should persist supported writable keys,
 ignore unknown or read-only keys, and return `success=false` with `message` when
 validation fails.
 
-For `MSG_RUN_CONFIGURATION_ACTION`, StreamVault sends `configuration_action_id`.
+For `MSG_RUN_CONFIGURATION_ACTION`, Sokatito sends `configuration_action_id`.
 Plugins should execute the action, return a user-facing `message`, and refresh
 their values when `refreshAfterRun` is true.
 
 ## Configuration Activity Mode
 
 Activity configuration lets the plugin own the complete configuration UI.
-StreamVault starts `configurationActivityAction` with the plugin package set
+Sokatito starts `configurationActivityAction` with the plugin package set
 explicitly, so the action does not resolve to another app.
 
 A plugin opts in with:
@@ -402,14 +402,14 @@ connected clients, and logs.
 
 ## Native Activity Visual Guidance
 
-Native plugin Activities should feel at home when launched from StreamVault and
+Native plugin Activities should feel at home when launched from Sokatito and
 remain usable when opened directly from Android or Android TV.
 
 Recommended visual and interaction rules:
 
 - Design TV-first: every important control must be D-pad focusable and readable
   from couch distance.
-- Keep the style restrained and close to StreamVault: dark background, compact
+- Keep the style restrained and close to Sokatito: dark background, compact
   panels, clear focus states, and meaningful status colors for running, stopped,
   warning, and error states.
 - Collapse heavy or secondary sections by default, especially logs, source
@@ -421,8 +421,8 @@ Recommended visual and interaction rules:
 - Use Android resources and the system locale for all user-facing text.
 - Show direct feedback for loading, validation, success, and failure states.
 - Test both entry points: launched directly from the plugin APK and launched from
-  StreamVault's Plugins screen.
-- Test on the same device classes StreamVault supports, including TV devices such
+  Sokatito's Plugins screen.
+- Test on the same device classes Sokatito supports, including TV devices such
   as Chromecast and phone-sized devices such as Nexus 5X.
 
 ## Integration Checklist

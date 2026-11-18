@@ -21,15 +21,15 @@ class RequestIdentityTest {
 
     @Test
     fun `OpenSubtitles user agent follows app name and version format`() {
-        assertThat(buildOpenSubtitlesUserAgent("1.2.3")).isEqualTo("StreamVault v1.2.3")
-        assertThat(buildOpenSubtitlesUserAgent(null)).isEqualTo("StreamVault vdev")
+        assertThat(buildOpenSubtitlesUserAgent("1.2.3")).isEqualTo("Sokatito v1.2.3")
+        assertThat(buildOpenSubtitlesUserAgent(null)).isEqualTo("Sokatito vdev")
     }
 
     @Test
     fun `safeRequestIdentitySummary redacts sensitive headers`() {
         val request = Request.Builder()
             .url("https://example.test/epg.xml")
-            .header(USER_AGENT_HEADER, "StreamVault/1.0")
+            .header(USER_AGENT_HEADER, "Sokatito/1.0")
             .header("Authorization", "Bearer secret")
             .header("Cookie", "session=secret")
             .header("Referer", "https://portal.example.test")
@@ -40,7 +40,7 @@ class RequestIdentityTest {
         )
 
         assertThat(summary).contains("owner=provider:7/epg")
-        assertThat(summary).contains("userAgent=StreamVault/1.0")
+        assertThat(summary).contains("userAgent=Sokatito/1.0")
         assertThat(summary).contains("Referer")
         assertThat(summary).doesNotContain("Authorization")
         assertThat(summary).doesNotContain("Cookie")

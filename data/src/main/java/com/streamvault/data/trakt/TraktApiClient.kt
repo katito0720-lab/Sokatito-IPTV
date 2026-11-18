@@ -49,7 +49,7 @@ class TraktApiClient(
     private val config: TraktConfig,
     private val client: OkHttpClient,
     private val baseUrl: HttpUrl = "https://api.trakt.tv/".toHttpUrl(),
-    private val userAgent: String = "StreamVault",
+    private val userAgent: String = "Sokatito",
 ) : TraktApi, TraktPlaybackApi, TraktHistoryApi, TraktWatchlistApi, TraktFavoritesApi, TraktRatingsApi,
     TraktCustomListsApi, TraktDiscoveryApi {
     private val gson = Gson()

@@ -212,7 +212,7 @@ class BallDontLieProviderTest {
     }
 
     private fun factory(store: FakeStore) = BallDontLieProviderFactory(
-        httpClient = SportsProviderHttpClient("StreamVault-tests"),
+        httpClient = SportsProviderHttpClient("Sokatito-tests"),
         store = store,
         cache = BallDontLieResponseCache(),
     )
@@ -221,7 +221,7 @@ class BallDontLieProviderTest {
         config = store.config,
         descriptor = factory(store).descriptor,
         store = store,
-        httpClient = SportsProviderHttpClient("StreamVault-tests"),
+        httpClient = SportsProviderHttpClient("Sokatito-tests"),
         cache = BallDontLieResponseCache(),
         endpointBaseUrl = server.url("/").toString().trimEnd('/'),
         allowInsecureHttp = true,

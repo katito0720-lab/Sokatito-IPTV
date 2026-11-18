@@ -234,8 +234,8 @@ class StreamVaultTvInputService : TvInputService() {
     )
 
     private companion object {
-        const val TAG = "StreamVaultTvInput"
-        const val DEFAULT_USER_AGENT = "StreamVaultTvInput"
+        const val TAG = "SokatitoTvInput"
+        const val DEFAULT_USER_AGENT = "SokatitoTvInput"
         const val CHANNEL_COLUMN_INTERNAL_PROVIDER_DATA = "internal_provider_data"
         const val ENTRY_SEPARATOR = ":"
     }

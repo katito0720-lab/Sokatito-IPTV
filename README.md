@@ -1,22 +1,22 @@
-# Katito
+# Sokatito
 
 <p align="center">
-	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/releases/latest/download/Katito.apk"><img src="https://img.shields.io/badge/Download-Katito.apk-2ea44f?style=for-the-badge&logo=android" alt="Download Katito APK" /></a>
-	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/releases/latest"><img src="https://img.shields.io/github/v/release/katito0720-lab/StreamVault-IPTV?display_name=tag&style=for-the-badge&color=0f766e" alt="Latest Katito release" /></a>
-	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/releases"><img src="https://img.shields.io/github/downloads/katito0720-lab/StreamVault-IPTV/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
+	<a href="https://github.com/katito0720-lab/Sokatito-IPTV/releases/latest"><img src="https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android" alt="Download Sokatito APK" /></a>
+	<a href="https://github.com/katito0720-lab/Sokatito-IPTV/releases/latest"><img src="https://img.shields.io/github/v/release/katito0720-lab/Sokatito-IPTV?display_name=tag&style=for-the-badge&color=0f766e" alt="Latest Sokatito release" /></a>
+	<a href="https://github.com/katito0720-lab/Sokatito-IPTV/releases"><img src="https://img.shields.io/github/downloads/katito0720-lab/Sokatito-IPTV/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
 	<a href="docs/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-View-2563eb?style=for-the-badge" alt="View changelog" /></a>
-	<a href="https://github.com/katito0720-lab/StreamVault-IPTV/actions/workflows/build-katito.yml"><img src="https://img.shields.io/github/actions/workflow/status/katito0720-lab/StreamVault-IPTV/build-katito.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
+	<a href="https://github.com/katito0720-lab/Sokatito-IPTV/actions/workflows/build-katito.yml"><img src="https://img.shields.io/github/actions/workflow/status/katito0720-lab/Sokatito-IPTV/build-katito.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
 	<a href="https://ko-fi.com/davidona"><img src="https://img.shields.io/badge/Support-Ko--fi-ff5f5f?style=for-the-badge&logo=kofi" alt="Support on Ko-fi" /></a>
 	<a href="docs/STREAMVAULT-LICENSE.txt"><img src="https://img.shields.io/badge/License-StreamVault_OSL-0284c7?style=for-the-badge" alt="License" /></a>
 </p>
 
-Katito is based on [StreamVault](https://github.com/Davidona/StreamVault-IPTV) by David Nashash (Davidona).
+Sokatito is based on [StreamVault](https://github.com/Davidona/StreamVault-IPTV) by David Nashash (Davidona).
 
-Katito is a TV-first media player for Android TV built with Kotlin, Jetpack Compose, Room, Hilt, and Media3.
+Sokatito is a TV-first media player for Android TV built with Kotlin, Jetpack Compose, Room, Hilt, and Media3.
 
-It is designed for large playlists, remote-friendly browsing, fast provider switching, and a polished living-room playback experience. Katito supports `M3U` playlists, `Xtream Codes`, `Stalker Portal`, and `Jellyfin` providers, plus Stremio-compatible add-ons, with dedicated flows for `Live TV`, `Movies`, and `Series`.
+It is designed for large playlists, remote-friendly browsing, fast provider switching, and a polished living-room playback experience. Sokatito supports `M3U` playlists, `Xtream Codes`, `Stalker Portal`, and `Jellyfin` providers, plus Stremio-compatible add-ons, with dedicated flows for `Live TV`, `Movies`, and `Series`.
 
-Built for Android TV first, Katito focuses on the things generic IPTV apps usually get wrong: D-pad navigation, quick channel movement, large-library organization, and a player that still feels good to use from the couch. Phone and tablet installs are also supported, but the primary UX target is TV.
+Built for Android TV first, Sokatito focuses on the things generic IPTV apps usually get wrong: D-pad navigation, quick channel movement, large-library organization, and a player that still feels good to use from the couch. Phone and tablet installs are also supported, but the primary UX target is TV.
 
 ## Preview
 <p align="center">
@@ -176,9 +176,9 @@ Built for Android TV first, Katito focuses on the things generic IPTV apps usual
 
 ### Plugins
 
-- StreamVault can be extended with companion Android APK plugins.
+- Sokatito can be extended with companion Android APK plugins.
 - Plugin developers can expose provider, playback, Cast URL rewrite, and host-rendered or native configuration capabilities.
-- See the [StreamVault Plugin API](docs/PLUGIN_API.md) docs to create compatible plugins.
+- See the [Sokatito Plugin API](docs/PLUGIN_API.md) docs to create compatible plugins.
 
 ### Stremio-compatible Add-ons
 
@@ -210,7 +210,7 @@ Built for Android TV first, Katito focuses on the things generic IPTV apps usual
 
 ## Download
 
-- [Download latest Katito.apk](https://github.com/katito0720-lab/StreamVault-IPTV/releases/latest/download/Katito.apk)
+- [Download the latest APK](https://github.com/katito0720-lab/Sokatito-IPTV/releases/latest)
 - The app can also detect and download newer releases in-app through GitHub Releases.
 - GitHub Releases are now published only when the workflow is started manually with `workflow_dispatch`, so versioned releases do not get created by mistake on every push.
 
@@ -247,7 +247,7 @@ Useful commands:
 
 ## Notes
 
-- Katito is an IPTV client, not a content provider.
+- Sokatito is an IPTV client, not a content provider.
 - Use only playlists, streams, and guide sources you are authorized to access.
 - Local configuration and signing files are intentionally excluded from git.
 

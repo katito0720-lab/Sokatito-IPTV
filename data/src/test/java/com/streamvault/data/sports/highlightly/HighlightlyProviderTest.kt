@@ -248,7 +248,7 @@ class HighlightlyProviderTest {
         .setBody(requireNotNull(javaClass.classLoader?.getResource("sports/providers/$name")).readText())
 
     private fun factory(config: SportsProviderConfig): HighlightlyProviderFactory = HighlightlyProviderFactory(
-        httpClient = SportsProviderHttpClient("StreamVault-highlightly-test"),
+        httpClient = SportsProviderHttpClient("Sokatito-highlightly-test"),
         store = FakeStore(config, credentials()),
         cache = cache,
         quotaTracker = quotaTracker,
@@ -258,7 +258,7 @@ class HighlightlyProviderTest {
         config = config,
         descriptor = factory(config).descriptor,
         store = FakeStore(config, credentials()),
-        httpClient = SportsProviderHttpClient("StreamVault-highlightly-test"),
+        httpClient = SportsProviderHttpClient("Sokatito-highlightly-test"),
         cache = cache,
         quotaTracker = quotaTracker,
         endpointBaseUrl = server.url("/").toString().trimEnd('/'),

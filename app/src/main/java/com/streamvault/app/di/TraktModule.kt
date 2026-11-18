@@ -81,6 +81,6 @@ object TraktModule {
             .readTimeout(20, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false).build()
         return TraktAuthService(config, EncryptedTraktTokenStore(context, crypto),
-            TraktApiClient(config, client, userAgent = "StreamVault/${BuildConfig.VERSION_NAME}"))
+            TraktApiClient(config, client, userAgent = "Sokatito/${BuildConfig.VERSION_NAME}"))
     }
 }

@@ -59,7 +59,7 @@ private class FixtureProvider(
         "contract-fixture", setOf(SportsCapability.EVENTS, SportsCapability.LIVE_SCORES), SportsProviderAuth.Bearer,
     )
     override val instanceId = "fixture-account"
-    private val client = SportsProviderHttpClient("StreamVault-contract-test")
+    private val client = SportsProviderHttpClient("Sokatito-contract-test")
     private val credentials = SportsProviderCredentials(EventProviderContract.SECRET_MARKER)
 
     override suspend fun events(request: ProviderEventRequest): SportsProviderResult<ProviderBatch<ProviderEvent>> =

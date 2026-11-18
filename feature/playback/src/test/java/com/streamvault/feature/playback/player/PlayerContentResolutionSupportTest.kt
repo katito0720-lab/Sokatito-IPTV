@@ -103,7 +103,7 @@ class PlayerContentResolutionSupportTest {
         val episode = episode(id = 21L, stableEpisodeId = 321L)
         val expected = StreamInfo(
             url = "https://example.test/episode.m3u8",
-            userAgent = "StreamVault"
+            userAgent = "Sokatito"
         )
         val seriesRepository: SeriesRepository = mock()
         whenever(seriesRepository.getEpisodeStreamInfo(eq(episode))).thenReturn(Result.success(expected))
@@ -123,7 +123,7 @@ class PlayerContentResolutionSupportTest {
         )
 
         assertThat(result.streamInfo?.url).isEqualTo(expected.url)
-        assertThat(result.streamInfo?.userAgent).isEqualTo("StreamVault")
+        assertThat(result.streamInfo?.userAgent).isEqualTo("Sokatito")
         assertThat(result.streamInfo?.title).isEqualTo("Current Title")
         assertThat(result.streamInfo?.playbackContentKind).isEqualTo(PlaybackContentKind.ON_DEMAND)
     }

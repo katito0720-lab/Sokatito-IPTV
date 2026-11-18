@@ -29,7 +29,7 @@ class OpenSubtitlesApi @Inject constructor(
     private val okHttpClient: OkHttpClient,
     private val gson: Gson,
     @param:Named("opensubtitlesApiKey") private val apiKey: String,
-    @param:Named("opensubtitlesUserAgent") private val userAgent: String = "StreamVault vdev",
+    @param:Named("opensubtitlesUserAgent") private val userAgent: String = "Sokatito vdev",
 ) {
     private val loginRequestMutex = Mutex()
     private var lastLoginRequestStartedAtNanos: Long? = null

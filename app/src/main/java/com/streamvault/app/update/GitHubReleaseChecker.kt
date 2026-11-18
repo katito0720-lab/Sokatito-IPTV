@@ -14,8 +14,8 @@ import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val GITHUB_RELEASES_LATEST_URL = "https://api.github.com/repos/katito0720-lab/StreamVault-IPTV/releases/latest"
-private const val GITHUB_RELEASES_LIST_URL = "https://api.github.com/repos/katito0720-lab/StreamVault-IPTV/releases?per_page=20"
+private const val GITHUB_RELEASES_LATEST_URL = "https://api.github.com/repos/katito0720-lab/Sokatito-IPTV/releases/latest"
+private const val GITHUB_RELEASES_LIST_URL = "https://api.github.com/repos/katito0720-lab/Sokatito-IPTV/releases?per_page=20"
 
 data class GitHubReleaseInfo(
     val versionName: String,
@@ -42,7 +42,7 @@ class GitHubReleaseChecker @Inject constructor(
             val request = Request.Builder()
                 .url(updateChannel.releaseApiUrl)
                 .header("Accept", "application/vnd.github+json")
-                .header("User-Agent", "Katito-Update-Checker")
+                .header("User-Agent", "Sokatito-Update-Checker")
                 .build()
 
             okHttpClient.newCall(request).execute().use { response ->
@@ -152,8 +152,8 @@ class GitHubReleaseChecker @Inject constructor(
     private fun findApkAsset(assets: org.json.JSONArray?, updateChannel: AppUpdateChannel): ReleaseApkAsset? {
         if (assets == null) return null
         val apkName = when (updateChannel) {
-            AppUpdateChannel.Stable -> "Katito.apk"
-            AppUpdateChannel.Beta -> "Katito-beta.apk"
+            AppUpdateChannel.Stable -> "Sokatito.apk"
+            AppUpdateChannel.Beta -> "Sokatito-beta.apk"
         }
         for (index in 0 until assets.length()) {
             val asset = assets.optJSONObject(index) ?: continue

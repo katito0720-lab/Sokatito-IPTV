@@ -151,15 +151,15 @@ class CastMediaRequestFactoryTest {
         assertThat(
             request(
                 "https://example.test/movie.m3u8",
-                userAgent = "StreamVault"
+                userAgent = "Sokatito"
             )?.rewriteRequiredReason
         ).isEqualTo(CastRewriteRequiredReason.CUSTOM_USER_AGENT)
         assertThat(
             request(
                 "https://example.test/movie.m3u8",
-                userAgent = "StreamVault"
+                userAgent = "Sokatito"
             )?.userAgent
-        ).isEqualTo("StreamVault")
+        ).isEqualTo("Sokatito")
 
         assertThat(
             request(

@@ -68,7 +68,7 @@ class ChannelRepositoryImpl @Inject constructor(
 ) : ChannelRepository {
     private companion object {
         const val TAG = "ChannelRepository"
-        const val CATEGORY_FLOW_BUILD_TRACE = "StreamVault.CategoryFlow.Build"
+        const val CATEGORY_FLOW_BUILD_TRACE = "Sokatito.CategoryFlow.Build"
         const val GLOBAL_SEARCH_LIMIT = 500
         const val CATEGORY_SEARCH_LIMIT = 300
         const val MIN_SEARCH_QUERY_LENGTH = 2
