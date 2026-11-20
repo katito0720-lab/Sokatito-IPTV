@@ -2,6 +2,7 @@ package com.streamvault.app
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -18,6 +19,13 @@ import kotlin.math.roundToInt
 
 /** A decorative overlay. The activity can load and accept input underneath it. */
 internal class SokatitoOpeningEffect(context: Context) : View(context) {
+    private companion object {
+        const val ENTRANCE_MS = 425L
+        const val RING_MS = 850L
+        const val HOLD_MS = 4_000L
+        const val FADE_MS = 272L
+    }
+
     private val logo = requireNotNull(context.getDrawable(R.drawable.sokatito_opening_logo)).mutate()
     private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -25,13 +33,26 @@ internal class SokatitoOpeningEffect(context: Context) : View(context) {
         color = Color.rgb(244, 188, 98)
     }
     private var progress = 0f
-    private val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-        duration = 850L
+    private var opacity = 1f
+    private val pulse = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = RING_MS
         interpolator = LinearInterpolator()
         addUpdateListener {
             progress = it.animatedValue as Float
             invalidate()
         }
+    }
+    private val fade = ValueAnimator.ofFloat(1f, 0f).apply {
+        startDelay = ENTRANCE_MS + HOLD_MS
+        duration = FADE_MS
+        interpolator = LinearInterpolator()
+        addUpdateListener {
+            opacity = it.animatedValue as Float
+            invalidate()
+        }
+    }
+    private val animator = AnimatorSet().apply {
+        playTogether(pulse, fade)
         addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
                 dismiss()
@@ -60,9 +81,8 @@ internal class SokatitoOpeningEffect(context: Context) : View(context) {
         val centerX = width * 0.5f
         val centerY = height * 0.5f
         val radius = min(min(width, height) * 0.14f, 76f * resources.displayMetrics.density)
-        val entrance = (progress / 0.50f).coerceAtMost(1f)
+        val entrance = (progress * RING_MS.toFloat() / ENTRANCE_MS).coerceAtMost(1f)
         val eased = 1f - (1f - entrance) * (1f - entrance)
-        val opacity = ((1f - progress) / 0.32f).coerceIn(0f, 1f)
         canvas.drawARGB((255f * opacity).roundToInt(), 16, 12, 23)
         ring.alpha = (170f * (1f - progress) * opacity).roundToInt()
         canvas.drawCircle(centerX, centerY, radius * (1.02f + 0.55f * progress), ring)
