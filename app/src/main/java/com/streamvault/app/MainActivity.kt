@@ -168,6 +168,8 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
     }
 
     private var playerPictureInPictureState = PlayerPictureInPictureState()
+    private var openingEffect: SokatitoOpeningEffect? = null
+    private var skipOpeningEffectOnStart = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         if (BuildConfig.DEBUG) {
@@ -179,6 +181,7 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
             )
         }
         super.onCreate(savedInstanceState)
+        skipOpeningEffectOnStart = savedInstanceState != null && lastNonConfigurationInstance != null
         // Disable legacy window-fitting so Compose receives IME insets directly.
         // This fixes keyboard-covers-input-field on API 30+ where adjustResize is
         // ignored when the theme sets windowFullscreen=true.
@@ -274,6 +277,37 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
         databaseStartupCoordinator.start()
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (!skipOpeningEffectOnStart) showOpeningEffectFor(intent)
+        skipOpeningEffectOnStart = false
+    }
+
+    private fun showOpeningEffectFor(request: Intent) {
+        val opensMainScreen = request.action == Intent.ACTION_MAIN || request.action == null
+        if (!opensMainScreen || request.hasExtra(EXTRA_PLAYER_REQUEST) ||
+            request.hasExtra(EXTRA_EXTERNAL_ROUTE) || request.hasExtra(EXTRA_EXTERNAL_DESTINATION)
+        ) {
+            openingEffect?.dismiss()
+            return
+        }
+        if (isInPictureInPictureMode || openingEffect?.parent != null) return
+        openingEffect = SokatitoOpeningEffect(this).also {
+            it.showIn(findViewById(android.R.id.content))
+        }
+    }
+
+    override fun onStop() {
+        openingEffect?.dismiss()
+        openingEffect = null
+        super.onStop()
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        openingEffect?.dismiss()
+    }
+
     override fun onResume() {
         super.onResume()
         applyImmersiveSystemUi()
@@ -301,6 +335,9 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            showOpeningEffectFor(intent)
+        }
         handleExternalIntent(intent)
     }
 
@@ -314,6 +351,7 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
         newConfig: Configuration
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        if (isInPictureInPictureMode) openingEffect?.dismiss()
         _pictureInPictureModeFlow.value = isInPictureInPictureMode
     }
 
