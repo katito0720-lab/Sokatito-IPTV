@@ -168,12 +168,33 @@ internal fun SportsHubContent(
     var inclusionsOpen by remember { mutableStateOf(false) }
     val visibleEvents = state.events.filter { it.matchesDiscovery(state) }
     val eflChampionshipLabel = stringResource(R.string.live_sports_league_efl_championship)
+    val channelLeagues = remember(state.leagueChannels, state.selectedTimeRange, state.selectedSportFilter,
+        state.excludedSports, state.excludedLeagues) {
+        if (state.selectedTimeRange != SportsTimeRange.ON_NOW) emptyMap()
+        else state.leagueChannels.filterKeys { league ->
+            league.sport.matches(state.selectedSportFilter) && league.sport.discoveryKey !in state.excludedSports &&
+                league.id !in state.excludedLeagues
+        }
+    }
+    val channelRows = remember(channelLeagues, state.selectedLeagueFilter, state.searchQuery) {
+        val terms = SportsTextNormalizer.normalize(state.searchQuery).split(' ').filter(String::isNotBlank)
+        channelLeagues.filterKeys { state.selectedLeagueFilter == null || it.id == state.selectedLeagueFilter }
+            .mapValues { (league, channels) ->
+                if (terms.isEmpty()) channels else channels.filter { broadcast ->
+                    val channel = broadcast.channel
+                    val label = SportsTextNormalizer.normalize(listOfNotNull(channel.name, channel.groupTitle,
+                        channel.categoryName, league.displayName).joinToString(" "))
+                    terms.all { term -> term in label || league.aliases.any { term in it } }
+                }
+            }.filterValues { it.isNotEmpty() }.entries.sortedBy { it.key.displayName }
+    }
     val availableLeagues = state.events.asSequence()
         .filter { it.matches(state.selectedSportFilter) && it.sport.discoveryKey !in state.excludedSports &&
             it.leagueFilterKey !in state.excludedLeagues }
         .mapNotNull { event -> event.leagueFilterKey?.let { key ->
             SportsLeagueFilterOption(key, event.localizedLeagueName(eflChampionshipLabel).orEmpty())
         } }
+        .plus(channelLeagues.keys.asSequence().map { SportsLeagueFilterOption(it.id, it.displayName) })
         .filter { it.label.isNotBlank() }
         .distinctBy(SportsLeagueFilterOption::id)
         .sortedBy { it.label }
@@ -216,7 +237,7 @@ internal fun SportsHubContent(
         when {
             state.isLoading -> item { SportsLoadingState() }
             state.hasError -> item { SportsErrorState(onRetry) }
-            visibleEvents.isEmpty() -> item { SportsEmptyState() }
+            visibleEvents.isEmpty() -> if (channelRows.isEmpty()) item { SportsEmptyState() } else Unit
             else -> {
                 val leagueGroups = visibleEvents.groupBy { event ->
                     event.leagueFilterKey ?: event.categoryLabel?.let {
@@ -264,6 +285,25 @@ internal fun SportsHubContent(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+        channelRows.forEach { (league, channels) ->
+            item(key = "channels:${league.id}") {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(league.displayName, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
+                        Text(stringResource(R.string.live_sports_channel_choices, channels.size),
+                            fontSize = 12.sp, color = BrowseColors.TextSecondary)
+                    }
+                    LazyRow(modifier = Modifier.fillMaxWidth().focusGroup(),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(channels, key = { it.channelIdentityKey() }) { broadcast ->
+                            SportsChannelButton(channel = broadcast.channel, modifier = Modifier.widthIn(max = 320.dp),
+                                onClick = { onPlayBroadcast(broadcast) })
                         }
                     }
                 }

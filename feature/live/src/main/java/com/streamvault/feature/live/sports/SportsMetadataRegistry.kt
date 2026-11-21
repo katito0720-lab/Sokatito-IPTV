@@ -134,20 +134,24 @@ internal object SportsLeagueRegistry {
         definition to definition.aliases.map(SportsTextNormalizer::normalize)
     }.sortedByDescending { (_, aliases) -> aliases.maxOf(String::length) }
 
-    fun detect(text: String): SportsLeague? {
-        val normalizedText = " ${SportsTextNormalizer.normalize(text)} "
-        val definition = definitions.firstOrNull { (_, aliases) ->
-            aliases.any { alias -> normalizedText.contains(" $alias ") }
-        } ?: return null
-        return definition.toLeague()
+    // Prefer the longest alias actually present, e.g. Indian Premier League over Premier League.
+    private val leagueAliases = definitions.flatMap { definition ->
+        val league = definition.toLeague()
+        definition.second.map { alias -> " $alias " to league }
+    }.sortedByDescending { it.first.length }
+
+    fun detectChannelTag(text: String): SportsLeague? {
+        val normalized = " ${SportsTextNormalizer.normalize(text)} "
+        return leagueAliases.firstOrNull { (alias, _) -> alias in normalized }?.second
     }
+
+    fun detect(text: String): SportsLeague? = detectNormalized(SportsTextNormalizer.normalize(text))
 
     fun detectNormalized(normalizedText: String): SportsLeague? {
         val searchableText = " " + normalizedText + " "
-        val definition = definitions.firstOrNull { (_, aliases) ->
+        return definitions.firstOrNull { (_, aliases) ->
             aliases.any { alias -> searchableText.contains(" $alias ") }
-        } ?: return null
-        return definition.toLeague()
+        }?.toLeague()
     }
 
     fun aliasesFor(displayName: String?): Set<String> {

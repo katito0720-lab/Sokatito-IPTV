@@ -66,6 +66,7 @@ internal data class SportsHubUiState(
     val isLoading: Boolean = true,
     val hasError: Boolean = false,
     val events: List<SportsEvent> = emptyList(),
+    val leagueChannels: Map<SportsLeague, List<SportsBroadcast>> = emptyMap(),
     val selectedTimeRange: SportsTimeRange = SportsTimeRange.ON_NOW,
     val selectedSportFilter: SportsSportFilter = SportsSportFilter.ALL,
     val selectedLeagueFilter: String? = null,
@@ -267,7 +268,16 @@ internal class SportsHubRepository @Inject constructor(
                     fallbackChannelIndexCache = null
                     availableChannelEntries = emptyList()
                     if (previousInputs?.retry != inputs.retry) classificationCache.clear()
-                    _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false) }
+                    val channelsChanged = previousInputs?.providers != inputs.providers
+                    _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false,
+                        leagueChannels = if (channelsChanged) emptyMap() else it.leagueChannels) }
+                    if (channelsChanged) {
+                        val directory = withContext(Dispatchers.Default) {
+                            inputs.providers.flatMap { taggedSportsChannels(it.channels, it.combinedProfileId) }
+                                .groupBy({ it.first }, { it.second })
+                        }
+                        _uiState.update { it.copy(leagueChannels = directory) }
+                    }
                     previousInputs = inputs
                 }
                 if (active) {
@@ -337,7 +347,8 @@ internal class SportsHubRepository @Inject constructor(
     fun selectSportFilter(filter: SportsSportFilter) {
         _uiState.update { state ->
             val selectedLeague = state.selectedLeagueFilter?.takeIf { league ->
-                state.events.any { event -> event.leagueFilterKey == league && event.matches(filter) }
+                state.events.any { event -> event.leagueFilterKey == league && event.matches(filter) } ||
+                    (state.selectedTimeRange == SportsTimeRange.ON_NOW && state.leagueChannels.keys.any { it.id == league && it.sport.matches(filter) })
             }
             state.copy(selectedSportFilter = filter, selectedLeagueFilter = selectedLeague)
         }
@@ -611,7 +622,8 @@ internal class SportsHubRepository @Inject constructor(
         }
         val currentState = _uiState.value
         val selectedLeague = currentState.selectedLeagueFilter?.takeIf { league ->
-            presentedEvents.any { event -> event.leagueFilterKey == league && event.matches(currentState.selectedSportFilter) }
+            presentedEvents.any { event -> event.leagueFilterKey == league && event.matches(currentState.selectedSportFilter) } ||
+                (range == SportsTimeRange.ON_NOW && currentState.leagueChannels.keys.any { it.id == league && it.sport.matches(currentState.selectedSportFilter) })
         }
         _uiState.value = currentState.copy(
             isLoading = false,

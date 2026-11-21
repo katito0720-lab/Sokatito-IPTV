@@ -147,7 +147,7 @@ internal fun SportsInclusionsDialog(
     onDismiss: () -> Unit,
 ) {
     var leagueQuery by remember { mutableStateOf("") }
-    val leagues = (state.excludedLeagues.associateWith { it } + state.knownLeagues).entries
+    val leagues = (state.excludedLeagues.associateWith { it } + state.leagueChannels.keys.associate { it.id to it.displayName } + state.knownLeagues).entries
         .filter { SportsTextNormalizer.normalize(it.value).contains(SportsTextNormalizer.normalize(leagueQuery)) }
         .sortedBy { it.value }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {

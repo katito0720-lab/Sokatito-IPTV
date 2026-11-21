@@ -147,12 +147,14 @@ internal fun SportsEvent.broadcastStatusAt(nowMillis: Long): SportsBroadcastStat
     else -> SportsBroadcastStatus.ENDED
 }
 
-internal fun SportsEvent.matches(filter: SportsSportFilter): Boolean = when (filter) {
+internal fun SportsEvent.matches(filter: SportsSportFilter): Boolean = sport.matches(filter)
+
+internal fun SportType.matches(filter: SportsSportFilter): Boolean = when (filter) {
     SportsSportFilter.ALL -> true
-    SportsSportFilter.FOOTBALL -> sport == SportType.FOOTBALL
-    SportsSportFilter.BASKETBALL -> sport == SportType.BASKETBALL
-    SportsSportFilter.MOTORSPORT -> sport == SportType.MOTORSPORT
-    SportsSportFilter.OTHER -> sport !in setOf(
+    SportsSportFilter.FOOTBALL -> this == SportType.FOOTBALL
+    SportsSportFilter.BASKETBALL -> this == SportType.BASKETBALL
+    SportsSportFilter.MOTORSPORT -> this == SportType.MOTORSPORT
+    SportsSportFilter.OTHER -> this !in setOf(
         SportType.FOOTBALL,
         SportType.BASKETBALL,
         SportType.MOTORSPORT,
