@@ -73,7 +73,7 @@ internal fun LeagueBadge(label: String, sport: SportType?, active: Boolean, onCl
     }
 }
 
-internal data class SportsFeedTile(val broadcast: SportsBroadcast, val fixture: SportsFeedLabel?)
+internal data class SportsFeedTile(val broadcast: SportsBroadcast, val fixture: SportsFeedLabel?, val isLive: Boolean = false)
 
 @Composable
 internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick: () -> Unit) {
@@ -98,6 +98,7 @@ internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick:
                     Text(source, modifier = Modifier.widthIn(max = 102.dp), color = BrowseColors.TextSecondary,
                         fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                if (feed.isLive) LiveBadge()
             }
             Column(Modifier.fillMaxWidth().heightIn(min = 43.dp), verticalArrangement = Arrangement.Center) {
                 if (fixture == null) {

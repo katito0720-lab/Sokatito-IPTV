@@ -181,7 +181,10 @@ internal fun SportsHubContent(
                 league.id !in state.excludedLeagues
         }
     }
-    val channelRows = remember(channelLeagues, state.selectedLeagueFilter, state.searchQuery) {
+    val channelRows = remember(channelLeagues, state.selectedLeagueFilter, state.searchQuery, state.events, state.nowMillis) {
+        val eventsByChannel = state.events.flatMap { event ->
+            event.broadcasts.map { it.channelIdentityKey() to event }
+        }.groupBy({ it.first }, { it.second })
         val terms = SportsTextNormalizer.normalize(state.searchQuery).split(' ').filter(String::isNotBlank)
         channelLeagues.filterKeys { state.selectedLeagueFilter == null || it.id == state.selectedLeagueFilter }
             .mapValues { (league, channels) ->
@@ -192,8 +195,10 @@ internal fun SportsHubContent(
                     terms.all { term -> term in label || league.aliases.any { term in it } }
                 }
             }.filterValues { it.isNotEmpty() }.mapValues { (_, broadcasts) ->
-                broadcasts.map { SportsFeedTile(it, parseSportsFeedLabel(it.channel.name)) }
-                    .sortedByDescending { it.fixture != null }
+                broadcasts.map {
+                    val tile = SportsFeedTile(it, parseSportsFeedLabel(it.channel.name))
+                    tile.copy(isLive = tile.isLiveAt(eventsByChannel[it.channelIdentityKey()].orEmpty(), state.nowMillis))
+                }.sortedWith(compareByDescending<SportsFeedTile> { it.isLive }.thenByDescending { it.fixture != null })
             }.entries.sortedBy { it.key.displayName }
     }
     val availableLeagues = state.events.asSequence()
@@ -626,10 +631,6 @@ private fun attributionText(attribution: SportsAttributionCredit): String = when
         R.string.live_sports_football_data_attribution, attribution.sourceName,
     )
 }
-
-private fun SportsEvent.isLiveAt(nowMillis: Long): Boolean =
-    provenance.status?.value?.state == ProviderGameState.LIVE ||
-        broadcastStatusAt(nowMillis) == SportsBroadcastStatus.ON_AIR
 
 private fun SportsEvent.localizedLeagueName(eflChampionshipLabel: String): String? =
     if (leagueInfo?.id == "efl-championship") eflChampionshipLabel
@@ -1263,17 +1264,17 @@ private fun SportsManualChannelPickerDialog(
 }
 
 @Composable
-private fun LiveBadge() {
+internal fun LiveBadge() {
     Box(
         modifier = Modifier
             .clip(CircleShape)
-            .background(BrowseColors.Live.copy(alpha = 0.18f))
+            .background(Color(0xFFD32845))
             .padding(horizontal = 7.dp, vertical = 3.dp),
     ) {
         Text(
             text = stringResource(R.string.live_sports_live_badge),
             fontSize = 9.sp,
-            color = BrowseColors.Live,
+            color = Color.White,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.7.sp,
         )
