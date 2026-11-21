@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Snuker</string>
     <string name="live_sports_darts">Hedhje shigjetash</string>
     <string name="live_sports_cycling">Çiklizëm</string>
+    <string name="live_sports_playlist_events">Ngjarje drejtpërdrejt</string>
 </resources>

@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">斯诺克</string>
     <string name="live_sports_darts">飞镖</string>
     <string name="live_sports_cycling">自行车</string>
+    <string name="live_sports_playlist_events">直播赛事</string>
 </resources>

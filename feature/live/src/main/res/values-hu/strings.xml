@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Snooker</string>
     <string name="live_sports_darts">Darts</string>
     <string name="live_sports_cycling">Kerékpározás</string>
+    <string name="live_sports_playlist_events">Élő események</string>
 </resources>

@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Snooker</string>
     <string name="live_sports_darts">Dardos</string>
     <string name="live_sports_cycling">Ciclismo</string>
+    <string name="live_sports_playlist_events">Eventos ao vivo</string>
 </resources>

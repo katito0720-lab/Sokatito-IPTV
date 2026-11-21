@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">السنوكر</string>
     <string name="live_sports_darts">رمي السهام</string>
     <string name="live_sports_cycling">ركوب الدراجات</string>
+    <string name="live_sports_playlist_events">فعاليات مباشرة</string>
 </resources>

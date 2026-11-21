@@ -73,13 +73,19 @@ internal fun LeagueBadge(label: String, sport: SportType?, active: Boolean, onCl
     }
 }
 
-internal data class SportsFeedTile(val broadcast: SportsBroadcast, val fixture: SportsFeedLabel?, val isLive: Boolean = false)
+internal data class SportsFeedTile(
+    val broadcast: SportsBroadcast,
+    val fixture: SportsFeedLabel?,
+    val isLive: Boolean = false,
+    val listing: SportsPlaylistEvent? = null,
+)
 
 @Composable
 internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick: () -> Unit) {
     val channel = feed.broadcast.channel
     val action = stringResource(R.string.live_sports_play_channel_content_description, channel.name)
     val fixture = feed.fixture
+    val listedTime = fixture?.schedule ?: feed.listing?.schedule
     TvClickableSurface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 116.dp).semantics { contentDescription = action },
@@ -92,9 +98,9 @@ internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick:
     ) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(league.displayName, modifier = Modifier.weight(1f), color = BrowseColors.TextSecondary,
+                Text(league.displayLabel(), modifier = Modifier.weight(1f), color = BrowseColors.TextSecondary,
                     fontSize = 10.sp, lineHeight = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                fixture?.feed?.let { source ->
+                (fixture?.feed ?: feed.listing?.feed)?.let { source ->
                     Text(source, modifier = Modifier.widthIn(max = 102.dp), color = BrowseColors.TextSecondary,
                         fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -102,7 +108,7 @@ internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick:
             }
             Column(Modifier.fillMaxWidth().heightIn(min = 43.dp), verticalArrangement = Arrangement.Center) {
                 if (fixture == null) {
-                    Text(channel.name, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary,
+                    Text(feed.listing?.title ?: channel.name, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary,
                         fontSize = 15.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 } else {
                     TeamLine(fixture.firstTeam, sportsAccent)
@@ -113,8 +119,8 @@ internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick:
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ChannelLogoBadge(channelName = channel.name, logoUrl = channel.logoUrl, shape = CircleShape,
                     modifier = Modifier.size(20.dp))
-                Text(fixture?.schedule ?: stringResource(R.string.nav_live_tv), modifier = Modifier.weight(1f),
-                    color = if (fixture?.schedule != null) sportsAccent else BrowseColors.TextSecondary,
+                Text(listedTime ?: stringResource(R.string.nav_live_tv), modifier = Modifier.weight(1f),
+                    color = if (listedTime != null) sportsAccent else BrowseColors.TextSecondary,
                     fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(16.dp), tint = BrowseColors.TextSecondary)
             }

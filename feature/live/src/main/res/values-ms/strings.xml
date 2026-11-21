@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Snuker</string>
     <string name="live_sports_darts">Dart</string>
     <string name="live_sports_cycling">Berbasikal</string>
+    <string name="live_sports_playlist_events">Acara langsung</string>
 </resources>

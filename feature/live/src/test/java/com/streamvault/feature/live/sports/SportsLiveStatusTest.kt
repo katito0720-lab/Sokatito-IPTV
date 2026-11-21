@@ -54,4 +54,15 @@ class SportsLiveStatusTest {
         assertThat(feed("Live: Chicago Bulls vs Washington Wizards").isLiveAt(emptyList(), now)).isFalse()
         assertThat(feed(program.title).isLiveAt(emptyList(), program.endTime)).isFalse()
     }
+
+    @Test fun recentDatedProviderLivePrefixCanConfirmAnActiveFeed() {
+        val label = "LIVE | Atlanta Hawks vs Charlotte Hornets | Fri 20 Nov 18:00 EST (US) | US: NBA PASS PPV 1"
+        val listing = parsePlaylistSportsEvent(label)
+        val listed = tile.copy(listing = listing)
+        val airTime = Instant.parse("2026-11-20T23:30:00Z").toEpochMilli()
+        assertThat(listed.isLiveAt(emptyList(), airTime)).isTrue()
+        assertThat(listed.isLiveAt(emptyList(), airTime + 86_400_000L)).isFalse()
+        assertThat(tile.copy(listing = parsePlaylistSportsEvent("LIVE | Atlanta Hawks vs Charlotte Hornets | all"))
+            .isLiveAt(emptyList(), airTime)).isFalse()
+    }
 }

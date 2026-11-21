@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">สนุกเกอร์</string>
     <string name="live_sports_darts">ปาเป้า</string>
     <string name="live_sports_cycling">จักรยาน</string>
+    <string name="live_sports_playlist_events">กิจกรรมถ่ายทอดสด</string>
 </resources>

@@ -1,6 +1,9 @@
 package com.streamvault.feature.live.sports
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.streamvault.domain.model.Channel
+import com.streamvault.feature.live.R
 import java.util.Locale
 
 private val numberedLeagueFeed = Regex("""\b(nba|wnba|epl|nfl|nhl|mlb)(?=\d)""", RegexOption.IGNORE_CASE)
@@ -8,6 +11,23 @@ private val premierLeagueRegion = Regex("""\bpremier\s+league\s*[-–—]\s*([^|
 private val feedDate = Regex("""\d{4}-\d{2}-\d{2}""")
 private val regions = (Locale.getISOCountries().map { Locale("", it).getDisplayCountry(Locale.ENGLISH) } +
     listOf("Scotland", "Wales", "Northern Ireland")).associateBy(SportsTextNormalizer::normalize)
+
+@Composable
+internal fun SportsLeague.displayLabel(): String = labelResource?.let { stringResource(it) } ?: displayName
+
+private val liveEvents = SportsLeague(
+    id = "playlist:live-events", displayName = "", sport = SportType.OTHER,
+    aliases = setOf("live events", "live event", "ppv"), labelResource = R.string.live_sports_playlist_events,
+)
+
+private val sportChannels = SportType.entries.associateWith { sport ->
+    SportsLeague("playlist:${sport.name.lowercase(Locale.ROOT)}", "", sport, setOf(
+        sport.name.lowercase(Locale.ROOT).replace('_', ' '),
+    ), if (sport == SportType.UNKNOWN) R.string.nav_sports else sport.labelResource())
+}
+
+internal val Channel.sportsProviderLabel: String
+    get() = currentVariant?.originalName?.takeIf(String::isNotBlank) ?: name
 
 private fun channelLeague(label: String): SportsLeague? {
     val league = SportsLeagueRegistry.detectChannelTag(label.replace(numberedLeagueFeed, "$1 ")) ?: return null
@@ -39,10 +59,21 @@ internal fun taggedSportsChannels(channels: List<Channel>, combinedProfileId: Lo
     }
     return channels.mapNotNull { channel ->
         if (channel.streamUrl.isBlank() || channel.isAdult || channel.isUserProtected) return@mapNotNull null
-        val league = channelLeague(channel.name)
+        val label = channel.sportsProviderLabel
+        if (isInactiveSportsListing(label)) return@mapNotNull null
+        val league = channelLeague(label)
             ?: groupLeague(channel.groupTitle)
             ?: groupLeague(channel.categoryName)
-            ?: return@mapNotNull null
+            ?: run {
+                val context = SportsProgrammeClassifier.prepareChannel(channel, providerLabel = label)
+                val listing = parsePlaylistSportsEvent(label)
+                when {
+                    listing != null && (listing.numberedSlot || context.isSportsChannel ||
+                        context.detectedSport != SportType.UNKNOWN || SportsEventParser.extractMatchup(listing.title) != null) -> liveEvents
+                    context.isSportsChannel || context.detectedSport != SportType.UNKNOWN -> sportChannels[context.detectedSport]
+                    else -> null
+                }
+            } ?: return@mapNotNull null
         league to SportsBroadcast(channel, combinedProfileId)
     }
 }

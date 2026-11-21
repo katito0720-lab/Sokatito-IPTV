@@ -45,6 +45,7 @@ internal object SportsProgrammeClassifier {
     private val sportsChannelTerms = listOf(
         "espn", "bein sports", "sky sports", "supersport", "sportsnet", "fox sports",
         "tnt sports", "dazn", "arena sport", "canal+ sport", "eurosport", "tennis channel",
+        "live event", "live events", "ppv sports",
         "golf channel", "nfl network", "nba tv", "mlb network", "nhl network",
     )
     private val normalizedSportsTerms = sportsTerms.mapValues { (_, terms) ->
@@ -61,8 +62,8 @@ internal object SportsProgrammeClassifier {
         val isSportsChannel: Boolean,
     )
 
-    fun prepareChannel(channel: Channel): ChannelContext {
-        val normalizedText = normalizeText(listOfNotNull(channel.name, channel.groupTitle).joinToString(" "))
+    fun prepareChannel(channel: Channel, providerLabel: String = channel.name): ChannelContext {
+        val normalizedText = normalizeText(listOfNotNull(providerLabel, channel.groupTitle, channel.categoryName).joinToString(" "))
         val paddedChannelText = " $normalizedText "
         val isSportsChannel = normalizedSportsChannelTerms.any { term ->
             containsNormalizedTerm(paddedChannelText, term)

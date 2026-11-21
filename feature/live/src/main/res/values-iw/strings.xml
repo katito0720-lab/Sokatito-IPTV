@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">סנוקר</string>
     <string name="live_sports_darts">הטלת חצים</string>
     <string name="live_sports_cycling">רכיבת אופניים</string>
+    <string name="live_sports_playlist_events">אירועים בשידור חי</string>
 </resources>

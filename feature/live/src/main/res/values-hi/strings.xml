@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">स्नूकर</string>
     <string name="live_sports_darts">डार्ट्स</string>
     <string name="live_sports_cycling">साइकिलिंग</string>
+    <string name="live_sports_playlist_events">लाइव इवेंट</string>
 </resources>

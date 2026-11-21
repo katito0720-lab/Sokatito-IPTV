@@ -76,6 +76,7 @@ internal data class SportsLeague(
     val displayName: String,
     val sport: SportType,
     val aliases: Set<String>,
+    val labelResource: Int? = null,
 )
 
 internal object SportsLeagueRegistry {
@@ -102,7 +103,7 @@ internal object SportsLeagueRegistry {
                 "EFL English Football League SkyBet Championship",
             ),
         ),
-        Definition("Premier League", SportType.FOOTBALL, listOf("Premier League", "English Premier League", "EPL")),
+        Definition("Premier League", SportType.FOOTBALL, listOf("Premier League", "English Premier League", "EPL", "E.P.L.")),
         Definition("La Liga", SportType.FOOTBALL, listOf("La Liga", "LaLiga")),
         Definition("Serie A", SportType.FOOTBALL, listOf("Serie A")),
         Definition("Bundesliga", SportType.FOOTBALL, listOf("Bundesliga", "1 Bundesliga")),
@@ -111,6 +112,8 @@ internal object SportsLeagueRegistry {
         Definition("Eredivisie", SportType.FOOTBALL, listOf("Eredivisie")),
         Definition("Primeira Liga", SportType.FOOTBALL, listOf("Primeira Liga")),
         Definition("Major League Soccer", SportType.FOOTBALL, listOf("Major League Soccer", "MLS")),
+        Definition("Liga MX", SportType.FOOTBALL, listOf("Liga MX")),
+        Definition("Copa Libertadores", SportType.FOOTBALL, listOf("Copa Libertadores")),
         Definition("NBA", SportType.BASKETBALL, listOf("NBA")),
         Definition("WNBA", SportType.BASKETBALL, listOf("WNBA")),
         Definition("EuroLeague", SportType.BASKETBALL, listOf("EuroLeague", "Euro League")),

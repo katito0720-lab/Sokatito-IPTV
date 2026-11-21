@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Snooker</string>
     <string name="live_sports_darts">Šipky</string>
     <string name="live_sports_cycling">Cyklistika</string>
+    <string name="live_sports_playlist_events">Živé události</string>
 </resources>

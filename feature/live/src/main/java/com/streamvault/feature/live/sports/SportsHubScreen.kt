@@ -190,24 +190,32 @@ internal fun SportsHubContent(
             .mapValues { (league, channels) ->
                 if (terms.isEmpty()) channels else channels.filter { broadcast ->
                     val channel = broadcast.channel
-                    val label = SportsTextNormalizer.normalize(listOfNotNull(channel.name, channel.groupTitle,
+                    val label = SportsTextNormalizer.normalize(listOfNotNull(channel.name, channel.sportsProviderLabel, channel.groupTitle,
                         channel.categoryName, league.displayName).joinToString(" "))
                     terms.all { term -> term in label || league.aliases.any { term in it } }
                 }
             }.filterValues { it.isNotEmpty() }.mapValues { (_, broadcasts) ->
                 broadcasts.map {
-                    val tile = SportsFeedTile(it, parseSportsFeedLabel(it.channel.name))
+                    val label = it.channel.sportsProviderLabel
+                    val listing = parsePlaylistSportsEvent(label)
+                    val tile = SportsFeedTile(it, parseSportsFeedLabel(label, listing), listing = listing)
                     tile.copy(isLive = tile.isLiveAt(eventsByChannel[it.channelIdentityKey()].orEmpty(), state.nowMillis))
-                }.sortedWith(compareByDescending<SportsFeedTile> { it.isLive }.thenByDescending { it.fixture != null })
-            }.entries.sortedBy { it.key.displayName }
+                }.sortedWith(compareByDescending<SportsFeedTile> { it.isLive }
+                    .thenByDescending { it.listing?.reportedLive == true }
+                    .thenByDescending { it.fixture != null || it.listing != null })
+            }.entries.sortedWith(compareByDescending<Map.Entry<SportsLeague, List<SportsFeedTile>>> {
+                it.value.first().isLive
+            }.thenBy { it.key.labelResource != R.string.live_sports_playlist_events }
+                .thenBy { it.key.displayName.ifBlank { it.key.id } })
     }
+    val channelLeagueOptions = channelLeagues.keys.map { SportsLeagueFilterOption(it.id, it.displayLabel(), it.sport) }
     val availableLeagues = state.events.asSequence()
         .filter { it.matches(state.selectedSportFilter) && it.sport.discoveryKey !in state.excludedSports &&
             it.leagueFilterKey !in state.excludedLeagues }
         .mapNotNull { event -> event.leagueFilterKey?.let { key ->
             SportsLeagueFilterOption(key, event.localizedLeagueName(eflChampionshipLabel).orEmpty(), event.sport)
         } }
-        .plus(channelLeagues.keys.asSequence().map { SportsLeagueFilterOption(it.id, it.displayName, it.sport) })
+        .plus(channelLeagueOptions.asSequence())
         .filter { it.label.isNotBlank() }
         .distinctBy(SportsLeagueFilterOption::id)
         .sortedBy { it.label }
@@ -297,7 +305,7 @@ internal fun SportsHubContent(
             val overview = state.selectedLeagueFilter == null && channels.size > 3
             item(key = "channels:${league.id}", span = fullRow) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(league.displayName, modifier = Modifier.weight(1f), fontSize = 17.sp,
+                    Text(league.displayLabel(), modifier = Modifier.weight(1f), fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
                     val count = stringResource(R.string.live_sports_channel_choices, channels.size)
                     if (overview) {

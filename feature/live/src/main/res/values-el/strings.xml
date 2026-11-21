@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Σνούκερ</string>
     <string name="live_sports_darts">Βελάκια</string>
     <string name="live_sports_cycling">Ποδηλασία</string>
+    <string name="live_sports_playlist_events">Ζωντανές εκδηλώσεις</string>
 </resources>

@@ -147,7 +147,8 @@ internal fun SportsInclusionsDialog(
     onDismiss: () -> Unit,
 ) {
     var leagueQuery by remember { mutableStateOf("") }
-    val leagues = (state.excludedLeagues.associateWith { it } + state.leagueChannels.keys.associate { it.id to it.displayName } + state.knownLeagues).entries
+    val channelLeagueNames = state.leagueChannels.keys.associate { it.id to it.displayLabel() }
+    val leagues = (state.excludedLeagues.associateWith { it } + channelLeagueNames + state.knownLeagues).entries
         .filter { SportsTextNormalizer.normalize(it.value).contains(SportsTextNormalizer.normalize(leagueQuery)) }
         .sortedBy { it.value }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -220,7 +221,7 @@ private fun InclusionRow(label: String, included: Boolean, onClick: () -> Unit) 
     }
 }
 
-private fun SportType.labelResource(): Int = when (this) {
+internal fun SportType.labelResource(): Int = when (this) {
     SportType.FOOTBALL -> R.string.live_sports_filter_football
     SportType.BASKETBALL -> R.string.live_sports_filter_basketball
     SportType.MOTORSPORT -> R.string.live_sports_filter_motorsport

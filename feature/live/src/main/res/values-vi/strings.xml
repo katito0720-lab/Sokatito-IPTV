@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Snooker</string>
     <string name="live_sports_darts">Phi tiêu</string>
     <string name="live_sports_cycling">Đua xe đạp</string>
+    <string name="live_sports_playlist_events">Sự kiện trực tiếp</string>
 </resources>

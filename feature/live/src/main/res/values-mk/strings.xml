@@ -313,4 +313,5 @@
     <string name="live_sports_snooker">Снукер</string>
     <string name="live_sports_darts">Пикадо</string>
     <string name="live_sports_cycling">Велосипедизам</string>
+    <string name="live_sports_playlist_events">Настани во живо</string>
 </resources>

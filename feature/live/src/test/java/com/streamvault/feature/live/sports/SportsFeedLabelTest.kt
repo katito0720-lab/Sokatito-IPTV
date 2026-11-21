@@ -26,4 +26,14 @@ class SportsFeedLabelTest {
         assertThat(parseSportsFeedLabel("|US| NBA Network (US)")).isNull()
         assertThat(parseSportsFeedLabel("Sky - Premier League")).isNull()
     }
+
+    @Test fun ukPremierLeagueAndLaLigaSourceFormatsPreserveFixtureTitles() {
+        assertThat(parseSportsFeedLabel("HBO UK 27| Premier League - Manchester City - Fulham (2026-11-21 11:00:00)"))
+            .isEqualTo(SportsFeedLabel("Manchester City", "Fulham", "2026-11-21 11:00", "HBO UK 27"))
+        assertThat(parseSportsFeedLabel("CA (TSN+ 037) | LaLiga: Real Madrid vs. Celta (2026-11-21 14:30:00)"))
+            .isEqualTo(SportsFeedLabel("Real Madrid", "Celta", "2026-11-21 14:30", "CA (TSN+ 037)"))
+        val slot = parsePlaylistSportsEvent("LIVE EVENT 03 - 1:30pm Price v Kotaskova")
+        assertThat(parseSportsFeedLabel("", slot))
+            .isEqualTo(SportsFeedLabel("Price", "Kotaskova", "1:30pm", "LIVE EVENT 03"))
+    }
 }

@@ -32,4 +32,22 @@ class SportsChannelDirectoryTest {
         val feed = channel.copy(name = "Next | 2026-11-21 | 21:00 (GMT) | Rovers vs Prankton | USVISF Premier League | BE")
         assertThat(taggedSportsChannels(listOf(feed), null).single().first.displayName).isEqualTo("USVISF Premier League")
     }
+
+    @Test fun `discovers named event slots and sport tags and ignores idle or ended feeds`() {
+        val feeds = listOf(
+            "LIVE EVENT 03 - 1:30pm Price v Kotaskova",
+            "HBO UK 27| Premier League - Manchester City - Fulham (2026-11-21 11:00:00)",
+            "CA (TSN+ 037) | LaLiga: Real Madrid vs. Celta (2026-11-21 14:30:00)",
+            "NHL Network",
+            "Tennis Channel",
+            "Live | PPA Tour: Daytona Beach Open | all | US: SOCCER PPV 73",
+            "LIVE EVENT 01 - NO EVENT",
+            "NO EVENT STREAMING NOW - | US: NBA PASS PPV 10",
+            "End | La Liga: Girona vs Alavés | 20-11-2026",
+            "##### NFL LIVE EVENTS #####",
+        ).mapIndexed { index, name -> channel.copy(id = index.toLong(), name = name) }
+        assertThat(taggedSportsChannels(feeds, null).map { it.first.id }).containsExactly(
+            "playlist:live-events", "premier-league", "la-liga", "nhl", "playlist:tennis", "playlist:live-events",
+        ).inOrder()
+    }
 }
