@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Twoja biblioteka IPTV jest gotowa</string>
   <string name="dashboard_live_shortcuts">Skróty na żywo</string>
   <string name="dashboard_live_shortcuts_subtitle">Ulubione, ostatnie kanały i ostatnia grupa.</string>
+  <string name="dashboard_feature_details">Szczegóły</string>
   <string name="dashboard_open_live_tv">Otwórz TV na żywo</string>
   <string name="dashboard_open_movies">Otwórz filmy</string>
   <string name="dashboard_open_series">Seria otwarta</string>

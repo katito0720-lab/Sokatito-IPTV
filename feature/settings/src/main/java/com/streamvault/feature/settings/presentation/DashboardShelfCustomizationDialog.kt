@@ -1,5 +1,10 @@
 package com.streamvault.feature.settings.presentation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.runtime.key
+import androidx.tv.material3.Icon
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +32,7 @@ import com.streamvault.feature.settings.R
 import com.streamvault.core.ui.components.dialogs.PremiumDialog
 import com.streamvault.core.ui.components.dialogs.PremiumDialogFooterButton
 import com.streamvault.core.ui.design.FocusSpec
-import com.streamvault.core.ui.interaction.TvButton
+import com.streamvault.core.ui.interaction.TvIconButton
 import com.streamvault.core.ui.interaction.TvClickableSurface
 import com.streamvault.core.ui.theme.OnSurface
 import com.streamvault.core.ui.theme.OnSurfaceDim
@@ -67,27 +72,29 @@ fun DashboardShelfCustomizationDialog(
                 )
             }
             enabledShelves.forEachIndexed { index, shelf ->
-                DashboardShelfCustomizationRow(
-                    shelf = shelf,
-                    isEnabled = true,
-                    canMoveUp = index > 0,
-                    canMoveDown = index < enabledShelves.lastIndex,
-                    onPrimaryAction = {
-                        draftShelves = enabledShelves.filterNot { it == shelf }
-                    },
-                    onMoveUp = {
-                        draftShelves = enabledShelves.toMutableList().also { items ->
-                            items[index] = items[index - 1]
-                            items[index - 1] = shelf
+                key(shelf) {
+                    DashboardShelfCustomizationRow(
+                        shelf = shelf,
+                        isEnabled = true,
+                        canMoveUp = index > 0,
+                        canMoveDown = index < enabledShelves.lastIndex,
+                        onPrimaryAction = {
+                            draftShelves = enabledShelves.filterNot { it == shelf }
+                        },
+                        onMoveUp = {
+                            draftShelves = enabledShelves.toMutableList().also { items ->
+                                items[index] = items[index - 1]
+                                items[index - 1] = shelf
+                            }
+                        },
+                        onMoveDown = {
+                            draftShelves = enabledShelves.toMutableList().also { items ->
+                                items[index] = items[index + 1]
+                                items[index + 1] = shelf
+                            }
                         }
-                    },
-                    onMoveDown = {
-                        draftShelves = enabledShelves.toMutableList().also { items ->
-                            items[index] = items[index + 1]
-                            items[index + 1] = shelf
-                        }
-                    }
-                )
+                    )
+                }
             }
 
             DashboardShelfSectionTitle(
@@ -95,17 +102,19 @@ fun DashboardShelfCustomizationDialog(
                 modifier = Modifier.padding(top = 12.dp)
             )
             availableShelves.forEach { shelf ->
-                DashboardShelfCustomizationRow(
-                    shelf = shelf,
-                    isEnabled = false,
-                    canMoveUp = false,
-                    canMoveDown = false,
-                    onPrimaryAction = {
-                        draftShelves = enabledShelves + shelf
-                    },
-                    onMoveUp = {},
-                    onMoveDown = {}
-                )
+                key(shelf) {
+                    DashboardShelfCustomizationRow(
+                        shelf = shelf,
+                        isEnabled = false,
+                        canMoveUp = false,
+                        canMoveDown = false,
+                        onPrimaryAction = {
+                            draftShelves = enabledShelves + shelf
+                        },
+                        onMoveUp = {},
+                        onMoveDown = {}
+                    )
+                }
             }
         },
         footer = {
@@ -189,11 +198,11 @@ private fun DashboardShelfCustomizationRow(
             )
             if (isEnabled) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TvButton(enabled = canMoveUp, onClick = onMoveUp) {
-                        Text(stringResource(R.string.settings_top_navigation_move_up))
+                    TvIconButton(enabled = canMoveUp, onClick = onMoveUp) {
+                        Icon(Icons.Filled.KeyboardArrowUp, stringResource(R.string.settings_top_navigation_move_up))
                     }
-                    TvButton(enabled = canMoveDown, onClick = onMoveDown) {
-                        Text(stringResource(R.string.settings_top_navigation_move_down))
+                    TvIconButton(enabled = canMoveDown, onClick = onMoveDown) {
+                        Icon(Icons.Filled.KeyboardArrowDown, stringResource(R.string.settings_top_navigation_move_down))
                     }
                 }
             }

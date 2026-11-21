@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Vaša knižnica IPTV je pripravená</string>
   <string name="dashboard_live_shortcuts">Skratky živého vysielania</string>
   <string name="dashboard_live_shortcuts_subtitle">Obľúbené, nedávne kanály a posledná skupina.</string>
+  <string name="dashboard_feature_details">Podrobnosti</string>
   <string name="dashboard_open_live_tv">Otvoriť Live TV</string>
   <string name="dashboard_open_movies">Otvoriť Filmy</string>
   <string name="dashboard_open_series">Otvoriť Seriály</string>

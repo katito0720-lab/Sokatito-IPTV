@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Ihre IPTV-Bibliothek ist fertig</string>
   <string name="dashboard_live_shortcuts">Live-Kurzbefehle</string>
   <string name="dashboard_live_shortcuts_subtitle">Favoriten, aktuelle Kanäle und letzte Gruppe.</string>
+  <string name="dashboard_feature_details">Details</string>
   <string name="dashboard_open_live_tv">Öffnen Sie Live-TV</string>
   <string name="dashboard_open_movies">Öffnen Sie Filme</string>
   <string name="dashboard_open_series">Offene Serie</string>

@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">您的 IPTV 媒體庫已就緒</string>
   <string name="dashboard_live_shortcuts">直播捷徑</string>
   <string name="dashboard_live_shortcuts_subtitle">收藏、最近頻道和上次群組。</string>
+  <string name="dashboard_feature_details">詳細資料</string>
   <string name="dashboard_open_live_tv">開啟直播電視</string>
   <string name="dashboard_open_movies">開啟電影</string>
   <string name="dashboard_open_series">開啟影集</string>

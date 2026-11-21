@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Handa na ang IPTV library mo</string>
   <string name="dashboard_live_shortcuts">Mga Live Shortcut</string>
   <string name="dashboard_live_shortcuts_subtitle">Mga paborito, kamakailang channel, at huling grupo.</string>
+  <string name="dashboard_feature_details">Detalye</string>
   <string name="dashboard_open_live_tv">Buksan ang Live TV</string>
   <string name="dashboard_open_movies">Buksan ang Mga Pelikula</string>
   <string name="dashboard_open_series">Buksan ang Mga Serye</string>

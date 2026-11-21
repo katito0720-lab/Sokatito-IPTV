@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">مكتبة IPTV الخاصة بك جاهزة</string>
   <string name="dashboard_live_shortcuts">اختصارات البث المباشر</string>
   <string name="dashboard_live_shortcuts_subtitle">المفضلة، والقنوات الأخيرة، وآخر مجموعة.</string>
+  <string name="dashboard_feature_details">التفاصيل</string>
   <string name="dashboard_open_live_tv">فتح البث المباشر</string>
   <string name="dashboard_open_movies">فتح الأفلام</string>
   <string name="dashboard_open_series">فتح المسلسلات</string>

@@ -94,6 +94,8 @@ internal fun AppNavHost(
         registerCatalogGraph(
             actions = actions,
             platformHost = catalogPlatformHost,
+            brandArtwork = com.streamvault.app.R.drawable.sokatito_opening_logo,
+            customizeLabel = com.streamvault.feature.settings.R.string.settings_home_dashboard_dialog_title,
             scaffold = appCatalogScaffold(onTopLevelDestinationRequested),
             dashboardShelfCustomizationContent = appDashboardShelfCustomizationContent(),
             onTopLevelDestinationRequested = onTopLevelDestinationRequested,

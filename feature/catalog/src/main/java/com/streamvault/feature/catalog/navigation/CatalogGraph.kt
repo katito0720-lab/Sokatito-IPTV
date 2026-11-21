@@ -32,6 +32,8 @@ import com.streamvault.feature.catalog.presentation.vod.VodScreen
 fun NavGraphBuilder.registerCatalogGraph(
     actions: NavigationActions,
     platformHost: CatalogPlatformHost?,
+    @androidx.annotation.DrawableRes brandArtwork: Int,
+    @androidx.annotation.StringRes customizeLabel: Int,
     scaffold: CatalogScaffoldContent,
     dashboardShelfCustomizationContent: CatalogDashboardShelfCustomizationContent,
     onTopLevelDestinationRequested: (AppDestination) -> Unit,
@@ -47,6 +49,8 @@ fun NavGraphBuilder.registerCatalogGraph(
 ) {
     composable(CatalogRoutePatterns.HOME) {
         DashboardScreen(
+            brandArtwork = brandArtwork,
+            customizeLabel = customizeLabel,
             onDestinationRequested = onTopLevelDestinationRequested,
             onAddProvider = { actions.navigate(AppDestination.ProviderSetup()) },
             onRecentChannelClick = { channel, combinedProfileId ->

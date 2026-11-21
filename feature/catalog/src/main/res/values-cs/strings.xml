@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Vaše knihovna IPTV je připravena</string>
   <string name="dashboard_live_shortcuts">Zkratky pro živé vysílání</string>
   <string name="dashboard_live_shortcuts_subtitle">Oblíbené, poslední kanály a poslední skupina.</string>
+  <string name="dashboard_feature_details">Podrobnosti</string>
   <string name="dashboard_open_live_tv">Otevřete Live TV</string>
   <string name="dashboard_open_movies">Otevřete aplikaci Filmy</string>
   <string name="dashboard_open_series">Otevřená řada</string>

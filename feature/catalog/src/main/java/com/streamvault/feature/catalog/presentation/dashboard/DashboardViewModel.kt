@@ -168,6 +168,9 @@ class DashboardViewModel @Inject constructor(
                         }
                     }
                 }
+                .combine(preferencesRepository.appHomeDashboardShelves) { state, shelves ->
+                    state.copy(homeDashboardShelves = shelves)
+                }
                 .collect { state ->
                     _uiState.value = state
                 }
@@ -415,23 +418,17 @@ class DashboardViewModel @Inject constructor(
                 liveChannelCount = liveChannelCount,
                 movieCount = movieCount,
                 seriesCount = seriesCount,
-                homeDashboardShelves = AppHomeDashboardShelf.defaultOrder,
                 updateNotice = null,
                 pinnedMovieCategories = shelves.pinnedMovieCategories,
                 pinnedSeriesCategories = shelves.pinnedSeriesCategories
             )
         }
 
-        return baseSnapshot.combine(
-            preferencesRepository.appHomeDashboardShelves.onStart { emit(AppHomeDashboardShelf.defaultOrder) }
-        ) { snapshot, homeDashboardShelves ->
-            snapshot.copy(homeDashboardShelves = homeDashboardShelves)
-        }.combine(observeUpdateNotice().onStart { emit(null) }) { snapshot, updateNotice ->
+        return baseSnapshot.combine(observeUpdateNotice().onStart { emit(null) }) { snapshot, updateNotice ->
             snapshot.copy(updateNotice = updateNotice)
         }.combine(syncManager.syncStateForProvider(provider.id).onStart { emit(SyncState.Idle) }) { snapshot, syncState ->
             DashboardUiState(
                 provider = provider,
-                homeDashboardShelves = snapshot.homeDashboardShelves,
                 favoriteChannels = snapshot.shelves.favoriteChannels,
                 recentChannels = snapshot.shelves.recentChannels,
                 continueWatching = snapshot.shelves.continueWatching,
@@ -823,7 +820,7 @@ class DashboardViewModel @Inject constructor(
                 title = movie.name,
                 summary = movie.year ?: appContext.getString(R.string.dashboard_fresh_movie_pick),
                 artworkUrl = movie.backdropUrl ?: movie.posterUrl,
-                actionLabel = appContext.getString(R.string.dashboard_open_movies),
+                actionLabel = appContext.getString(R.string.dashboard_feature_details),
                 actionType = DashboardFeatureAction.MOVIES
             )
         }
@@ -833,7 +830,7 @@ class DashboardViewModel @Inject constructor(
                 title = series.name,
                 summary = appContext.getString(R.string.dashboard_updated_series),
                 artworkUrl = series.backdropUrl ?: series.posterUrl,
-                actionLabel = appContext.getString(R.string.dashboard_open_series),
+                actionLabel = appContext.getString(R.string.dashboard_feature_details),
                 actionType = DashboardFeatureAction.SERIES
             )
         }
@@ -966,7 +963,6 @@ private data class DashboardSnapshot(
     val liveChannelCount: Int,
     val movieCount: Int,
     val seriesCount: Int,
-    val homeDashboardShelves: List<AppHomeDashboardShelf>,
     val updateNotice: DashboardUpdateNotice?,
     val pinnedMovieCategories: Map<String, List<Movie>> = emptyMap(),
     val pinnedSeriesCategories: Map<String, List<Series>> = emptyMap()

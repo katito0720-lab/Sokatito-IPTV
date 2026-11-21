@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Ваша бібліотека IPTV готова</string>
   <string name="dashboard_live_shortcuts">Live-ярлики</string>
   <string name="dashboard_live_shortcuts_subtitle">Обране, нещодавні канали та остання група.</string>
+  <string name="dashboard_feature_details">Подробиці</string>
   <string name="dashboard_open_live_tv">Відкрити пряме ТБ</string>
   <string name="dashboard_open_movies">Відкрити фільми</string>
   <string name="dashboard_open_series">Відкрити серіали</string>

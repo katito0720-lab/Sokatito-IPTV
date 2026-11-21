@@ -1,6 +1,15 @@
 package com.streamvault.feature.catalog.presentation.dashboard
 
-import com.streamvault.core.ui.layout.isPortraitLayout
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.painterResource
 
 import com.streamvault.core.ui.design.BrowseShapes
 import androidx.compose.foundation.background
@@ -12,6 +21,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.height
@@ -22,15 +32,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,8 +68,6 @@ import com.streamvault.feature.catalog.presentation.components.ContinueWatchingR
 import com.streamvault.feature.catalog.presentation.components.MovieCard
 import com.streamvault.core.ui.image.rememberCrossfadeImageModel
 import com.streamvault.feature.catalog.presentation.components.SeriesCard
-import com.streamvault.core.ui.components.shell.AppHeroHeader
-import com.streamvault.core.ui.components.shell.StatusPill
 import com.streamvault.core.ui.design.BrowseColors as AppColors
 import com.streamvault.feature.catalog.presentation.time.LocalCatalogTimeFormat
 import com.streamvault.feature.catalog.presentation.time.createCatalogDateTimeFormat
@@ -75,7 +79,6 @@ import com.streamvault.core.ui.design.BrowseColors.Brand as Primary
 import com.streamvault.core.ui.design.BrowseColors.Focus as FocusBorder
 import com.streamvault.core.ui.design.BrowseColors.SurfaceElevated as SurfaceElevated
 import com.streamvault.core.ui.design.BrowseColors.SurfaceEmphasis as SurfaceHighlight
-import com.streamvault.core.ui.design.BrowseColors.TextPrimary as OnBackground
 import com.streamvault.core.ui.design.BrowseColors.TextPrimary as TextPrimary
 import com.streamvault.core.ui.design.BrowseColors.TextTertiary as OnSurfaceDim
 import com.streamvault.core.ui.design.BrowseColors.TextTertiary as TextTertiary
@@ -96,6 +99,8 @@ import com.streamvault.core.ui.interaction.TvIconButton
 
 @Composable
 fun DashboardScreen(
+    @DrawableRes brandArtwork: Int,
+    @StringRes customizeLabel: Int,
     onDestinationRequested: (AppDestination) -> Unit,
     onAddProvider: () -> Unit,
     onRecentChannelClick: (Channel, Long?) -> Unit,
@@ -113,7 +118,7 @@ fun DashboardScreen(
     val nowMs by CatalogChannelProgressTicker.nowMs.collectAsStateWithLifecycle()
     val provider = uiState.provider
     val snackbarHostState = remember { SnackbarHostState() }
-    var showHomeCustomizationDialog by remember { mutableStateOf(false) }
+    var showHomeCustomizationDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
@@ -133,10 +138,27 @@ fun DashboardScreen(
             false
         ) {
             if (provider == null) {
-                EmptyDashboard(
-                    onAddProvider = onAddProvider,
-                    onOpenSettings = { onDestinationRequested(AppDestination.Settings()) }
-                )
+                if (uiState.isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        DashboardSpotlight(
+                            brandArtwork = brandArtwork,
+                            title = stringResource(R.string.dashboard_empty_title),
+                            summary = stringResource(R.string.dashboard_empty_body),
+                            actions = {
+                                TvButton(onClick = onAddProvider) { Text(stringResource(R.string.settings_add_provider)) }
+                                TvButton(onClick = { showHomeCustomizationDialog = true }) { Text(stringResource(customizeLabel)) }
+                                TvButton(onClick = { onDestinationRequested(AppDestination.Settings()) }) { Text(stringResource(R.string.nav_settings)) }
+                            }
+                        )
+                    }
+                }
                 return@scaffold
             }
             val orderedSections = rememberDashboardSections(uiState)
@@ -163,6 +185,40 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 28.dp)
             ) {
+                item(key = "spotlight") {
+                    val feature = uiState.feature
+                    val history = uiState.continueWatching.firstOrNull()
+                    val resume = feature.actionType == DashboardFeatureAction.CONTINUE_WATCHING
+                    DashboardSpotlight(
+                        brandArtwork = brandArtwork,
+                        artworkUrl = feature.artworkUrl,
+                        channelLogo = feature.actionType == DashboardFeatureAction.LIVE,
+                        title = feature.title,
+                        summary = feature.summary,
+                        progress = history?.takeIf { resume && it.totalDurationMs > 0 }?.let {
+                            (it.resumePositionMs.toDouble() / it.totalDurationMs).toFloat().coerceIn(0f, 1f)
+                        },
+                        actions = {
+                            if (feature.actionLabel.isNotBlank() && (!resume || history != null)) {
+                                TvButton(onClick = {
+                                    when (feature.actionType) {
+                                        DashboardFeatureAction.CONTINUE_WATCHING -> history?.let(onPlaybackHistoryClick)
+                                        DashboardFeatureAction.LIVE -> {
+                                            val channel = uiState.recentChannels.firstOrNull()
+                                            if (channel == null) onDestinationRequested(AppDestination.LiveTv())
+                                            else onRecentChannelClick(channel, uiState.currentCombinedProfileId)
+                                        }
+                                        DashboardFeatureAction.MOVIES -> uiState.recentMovies.firstOrNull()?.let(onMovieClick)
+                                        DashboardFeatureAction.SERIES -> uiState.recentSeries.firstOrNull()?.let(onSeriesClick)
+                                    }
+                                }) { Text(feature.actionLabel) }
+                            }
+                            TvButton(onClick = { showHomeCustomizationDialog = true }) {
+                                Text(stringResource(customizeLabel))
+                            }
+                        }
+                    )
+                }
                 if (uiState.isLoading && orderedSections.isEmpty()) {
                     item(key = "dashboard_loading") {
                         Box(
@@ -369,122 +425,73 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardHero(
-    providerName: String,
-    feature: DashboardFeature,
-    stats: DashboardStats,
-    onOpenLiveTv: () -> Unit,
-    onOpenGuide: () -> Unit,
-    onOpenSearch: () -> Unit,
-    onOpenSavedLibrary: () -> Unit,
-    onFeatureAction: () -> Unit
+private fun DashboardSpotlight(
+    @DrawableRes brandArtwork: Int,
+    title: String,
+    summary: String,
+    artworkUrl: String? = null,
+    channelLogo: Boolean = false,
+    progress: Float? = null,
+    actions: @Composable () -> Unit
 ) {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val isTelevisionDevice = rememberIsTelevisionDevice()
-    val heroHeight = when {
-        screenWidth < 700.dp -> 176.dp
-        !isTelevisionDevice && screenWidth < 1280.dp -> 196.dp
-        else -> 220.dp
-    }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .clip(BrowseShapes.Hero)
+            .background(Brush.linearGradient(listOf(AppColors.Surface, AppColors.SurfaceEmphasis)))
     ) {
-        if (!feature.artworkUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = rememberCrossfadeImageModel(feature.artworkUrl),
-                contentDescription = feature.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(heroHeight)
-                    .clip(BrowseShapes.Hero)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(heroHeight)
-                    .clip(BrowseShapes.Hero)
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.88f),
-                                Color.Black.copy(alpha = 0.72f),
-                                Color.Black.copy(alpha = 0.34f)
-                            )
+        val wide = maxWidth >= 560.dp
+        if (wide) {
+            Box(Modifier.matchParentSize(), contentAlignment = Alignment.CenterEnd) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(0.36f).fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (artworkUrl.isNullOrBlank()) {
+                        Image(
+                            painter = painterResource(brandArtwork),
+                            contentDescription = null,
+                            modifier = Modifier.size(102.dp)
                         )
-                    )
-            )
-        }
-
-        AppHeroHeader(
-            eyebrow = providerName,
-            title = feature.title.ifBlank { stringResource(R.string.dashboard_title) },
-            subtitle = feature.summary.ifBlank { stringResource(R.string.dashboard_subtitle, providerName) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (isPortraitLayout()) Modifier else Modifier.height(heroHeight)),
-            footer = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatusPill(label = stringResource(R.string.nav_live_tv), containerColor = AppColors.BrandMuted)
-                        StatusPill(label = stringResource(R.string.nav_epg), containerColor = AppColors.SurfaceEmphasis)
-                        StatusPill(label = stringResource(R.string.favorites_title), containerColor = AppColors.Warning, contentColor = Color.Black)
+                    } else {
+                        AsyncImage(
+                            model = rememberCrossfadeImageModel(artworkUrl),
+                            contentDescription = null,
+                            contentScale = if (channelLogo) ContentScale.Fit else ContentScale.Crop,
+                            modifier = if (channelLogo) Modifier.size(108.dp) else Modifier.fillMaxSize()
+                        )
                     }
-                    DashboardStatRow(stats = stats)
-                }
-            },
-            actions = {
-                DashboardActionButton(label = stringResource(R.string.nav_live_tv), onClick = onOpenLiveTv)
-                DashboardActionButton(label = stringResource(R.string.nav_epg), onClick = onOpenGuide)
-                DashboardActionButton(label = stringResource(R.string.dashboard_search_library), onClick = onOpenSearch)
-                DashboardActionButton(label = stringResource(R.string.favorites_title), onClick = onOpenSavedLibrary)
-                if (feature.actionLabel.isNotBlank()) {
-                    DashboardActionButton(
-                        label = feature.actionLabel,
-                        onClick = onFeatureAction
-                    )
                 }
             }
-        )
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth(if (wide) 0.64f else 1f)
+                .heightIn(min = if (wide) 154.dp else 0.dp)
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)
+        ) {
+            Text(title, style = MaterialTheme.typography.headlineSmall, color = TextPrimary,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(summary, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
+            if (progress != null) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    color = Primary,
+                    trackColor = AppColors.Outline,
+                    modifier = Modifier.width(144.dp)
+                )
+            }
+            FlowRow(
+                modifier = Modifier.padding(top = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(9.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) { actions() }
+        }
     }
 }
 
 private fun Series.rawSeriesIdsForNavigation(): List<Long> =
     variants.map { it.rawSeriesId }.ifEmpty { listOf(selectedVariantId ?: id) }
-
-@Composable
-private fun DashboardStatRow(
-    stats: DashboardStats
-) {
-    val statItems = listOf(
-        stringResource(R.string.dashboard_stat_live, stats.liveChannelCount),
-        stringResource(R.string.dashboard_stat_favorites, stats.favoriteChannelCount),
-        stringResource(R.string.dashboard_stat_recent, stats.recentChannelCount),
-        stringResource(R.string.dashboard_stat_resume, stats.continueWatchingCount),
-        stringResource(R.string.dashboard_stat_movies, stats.movieLibraryCount),
-        stringResource(R.string.dashboard_stat_series, stats.seriesLibraryCount)
-    )
-
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(statItems, key = { it }) { statLabel ->
-            Surface(
-                shape = BrowseShapes.Control,
-                colors = SurfaceDefaults.colors(
-                    containerColor = AppColors.Surface.copy(alpha = 0.64f)
-                )
-            ) {
-                Text(
-                    text = statLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextPrimary,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun DashboardShortcutRow(
@@ -843,66 +850,6 @@ private fun DashboardUpdateCard(
                         }
                     }
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyDashboard(
-    onAddProvider: () -> Unit,
-    onOpenSettings: () -> Unit
-) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        val isTelevisionDevice = rememberIsTelevisionDevice()
-        val contentModifier = if (maxWidth < 900.dp) {
-            Modifier.fillMaxWidth(0.9f)
-        } else if (!isTelevisionDevice && maxWidth < 1280.dp) {
-            Modifier.fillMaxWidth(0.76f)
-        } else {
-            Modifier.width(720.dp)
-        }
-
-        Surface(
-            shape = BrowseShapes.Hero,
-            colors = SurfaceDefaults.colors(
-                containerColor = SurfaceHighlight
-            )
-        ) {
-            Column(
-                modifier = contentModifier
-                    .padding(horizontal = 32.dp, vertical = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = stringResource(R.string.dashboard_empty_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = OnBackground
-                )
-                Text(
-                    text = stringResource(R.string.dashboard_empty_body),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = OnSurfaceDim
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TvButton(onClick = onAddProvider) {
-                        Text(stringResource(R.string.settings_add_provider))
-                    }
-                    TvButton(
-                        onClick = onOpenSettings,
-                        colors = ButtonDefaults.colors(
-                            containerColor = SurfaceElevated,
-                            focusedContainerColor = Primary.copy(alpha = 0.24f),
-                            contentColor = TextPrimary
-                        )
-                    ) {
-                        Text(stringResource(R.string.nav_settings))
-                    }
-                }
             }
         }
     }

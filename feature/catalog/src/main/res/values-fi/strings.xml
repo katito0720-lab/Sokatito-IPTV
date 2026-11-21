@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">IPTV-kirjastosi on valmis</string>
   <string name="dashboard_live_shortcuts">Live-pikakuvakkeet</string>
   <string name="dashboard_live_shortcuts_subtitle">Suosikit, viimeisimmät kanavat ja viimeinen ryhmä.</string>
+  <string name="dashboard_feature_details">Tiedot</string>
   <string name="dashboard_open_live_tv">Avaa Live TV</string>
   <string name="dashboard_open_movies">Avaa Elokuvat</string>
   <string name="dashboard_open_series">Avoin sarja</string>

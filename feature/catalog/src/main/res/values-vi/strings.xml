@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Thư viện IPTV của bạn đã sẵn sàng</string>
   <string name="dashboard_live_shortcuts">Lối tắt Trực tiếp</string>
   <string name="dashboard_live_shortcuts_subtitle">Mục yêu thích, kênh gần đây và nhóm cuối cùng.</string>
+  <string name="dashboard_feature_details">Chi tiết</string>
   <string name="dashboard_open_live_tv">Mở TV trực tiếp</string>
   <string name="dashboard_open_movies">Mở Phim</string>
   <string name="dashboard_open_series">Mở Phim bộ</string>

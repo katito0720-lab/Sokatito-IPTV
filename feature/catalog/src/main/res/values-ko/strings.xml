@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">IPTV 라이브러리를 사용할 수 있습니다</string>
   <string name="dashboard_live_shortcuts">라이브 바로가기</string>
   <string name="dashboard_live_shortcuts_subtitle">즐겨찾기, 최근 채널, 마지막 그룹.</string>
+  <string name="dashboard_feature_details">세부 정보</string>
   <string name="dashboard_open_live_tv">라이브 TV 열기</string>
   <string name="dashboard_open_movies">영화 열기</string>
   <string name="dashboard_open_series">시리즈 열기</string>

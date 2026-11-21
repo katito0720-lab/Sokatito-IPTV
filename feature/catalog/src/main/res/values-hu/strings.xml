@@ -70,6 +70,7 @@
   <string name="dashboard_library_ready">Az IPTV könyvtár készen áll</string>
   <string name="dashboard_live_shortcuts">Élő parancsikonok</string>
   <string name="dashboard_live_shortcuts_subtitle">Kedvencek, legutóbbi csatornák és utolsó csoport.</string>
+  <string name="dashboard_feature_details">Részletek</string>
   <string name="dashboard_open_live_tv">Nyissa meg az Élő TV-t</string>
   <string name="dashboard_open_movies">Nyissa meg a Filmek lehetőséget</string>
   <string name="dashboard_open_series">Nyitott sorozat</string>
