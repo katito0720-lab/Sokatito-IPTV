@@ -112,7 +112,7 @@ internal class SportsProviderEventResolver @Inject constructor(
             val matchConfidence = eventAssignment?.match?.confidence ?: 0f
             val score = scoresByLocalEventId[localEvent.id]
             val statusFromScore = score?.value?.status?.let { status ->
-                SourcedValue(status, score.source, score.value.updatedAt ?: status.updatedAt, isStale = score.isStale)
+                SourcedValue(status, score.source, status.updatedAt ?: score.updatedAt, isStale = score.isStale)
             }
             val statusFromEvent = listOfNotNull(scoreEventProvider, eventProvider)
                 .distinctBy(::providerKey)

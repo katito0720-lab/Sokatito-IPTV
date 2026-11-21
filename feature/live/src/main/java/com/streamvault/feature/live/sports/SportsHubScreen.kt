@@ -82,7 +82,6 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
-import com.streamvault.domain.sports.provider.ProviderGameState
 import com.streamvault.domain.sports.provider.ProviderAttributionFormat
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
@@ -201,7 +200,6 @@ internal fun SportsHubContent(
                     val tile = SportsFeedTile(it, parseSportsFeedLabel(label, listing), listing = listing)
                     tile.copy(isLive = tile.isLiveAt(eventsByChannel[it.channelIdentityKey()].orEmpty(), state.nowMillis))
                 }.sortedWith(compareByDescending<SportsFeedTile> { it.isLive }
-                    .thenByDescending { it.listing?.reportedLive == true }
                     .thenByDescending { it.fixture != null || it.listing != null })
             }.entries.sortedWith(compareByDescending<Map.Entry<SportsLeague, List<SportsFeedTile>>> {
                 it.value.first().isLive

@@ -40,7 +40,7 @@ internal fun retainSportsPresentation(event: SportsEvent, previous: SportsEvent?
         score.updatedAt?.let { !it.isBefore(now.minus(Duration.ofMinutes(10))) } == true
     }
     val score = event.provenance.score ?: oldScore?.copy(isStale = true)
-    val status = event.provenance.status ?: previous.provenance.status?.takeIf { oldScore != null }
+    val status = event.provenance.status ?: previous.provenance.status?.takeIf { oldScore != null }?.copy(isStale = true)
     return event.copy(
         competitors = event.competitors.map { competitor ->
             competitor.copy(logoUrl = competitor.logoUrl ?: previous.competitors

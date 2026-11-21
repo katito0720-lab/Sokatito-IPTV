@@ -677,7 +677,8 @@ internal class BallDontLieProvider(
         "delayed" -> ProviderGameState.DELAYED
         "suspended" -> ProviderGameState.SUSPENDED
         "scheduled", "not started", "tbd" -> ProviderGameState.SCHEDULED
-        else -> if (value.contains(Regex("\\d{1,2}:\\d{2}"))) ProviderGameState.LIVE else ProviderGameState.UNKNOWN
+        "live", "in progress", "in play", "halftime", "half time" -> ProviderGameState.LIVE
+        else -> ProviderGameState.UNKNOWN
     }
 
     private fun competitor(

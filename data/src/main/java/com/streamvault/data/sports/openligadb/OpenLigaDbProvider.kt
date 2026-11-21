@@ -329,8 +329,6 @@ internal class OpenLigaDbProvider(
         val status = when {
             finished -> ProviderGameStatus(ProviderGameState.FINAL, updatedAt = updatedAt)
             start.isAfter(clock.instant()) -> ProviderGameStatus(ProviderGameState.SCHEDULED, updatedAt = updatedAt)
-            !clock.instant().isAfter(start.plus(LIVE_MATCH_WINDOW)) ->
-                ProviderGameStatus(ProviderGameState.LIVE, updatedAt = updatedAt)
             else -> ProviderGameStatus(ProviderGameState.UNKNOWN, updatedAt = updatedAt)
         }
         return OpenLigaDbMatch(
@@ -452,7 +450,6 @@ internal class OpenLigaDbProvider(
         val TABLE_TTL: Duration = Duration.ofMinutes(15)
         val GROUPS_TTL: Duration = Duration.ofMinutes(15)
         val MAX_EVENT_RANGE: Duration = Duration.ofDays(31)
-        val LIVE_MATCH_WINDOW: Duration = Duration.ofHours(3)
         val LEAGUE_SHORTCUT = Regex("[A-Za-z0-9._-]{1,40}")
         val MATCH_ID = Regex("[1-9]\\d{0,9}")
         const val MAX_MATCHES = 500
