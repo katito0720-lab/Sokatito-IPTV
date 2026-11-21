@@ -28,7 +28,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -94,6 +98,7 @@ import com.streamvault.feature.live.R
 import com.streamvault.feature.live.api.LiveChannelPlaybackRequest
 import com.streamvault.feature.live.api.LiveHomeScaffoldContent
 import com.streamvault.feature.live.navigation.LiveRoutePatterns
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Check
@@ -101,7 +106,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.launch
 
-private data class SportsLeagueFilterOption(val id: String, val label: String)
+private data class SportsLeagueFilterOption(val id: String, val label: String, val sport: SportType)
 
 @Composable
 fun SportsHubScreen(
@@ -186,26 +191,32 @@ internal fun SportsHubContent(
                         channel.categoryName, league.displayName).joinToString(" "))
                     terms.all { term -> term in label || league.aliases.any { term in it } }
                 }
-            }.filterValues { it.isNotEmpty() }.entries.sortedBy { it.key.displayName }
+            }.filterValues { it.isNotEmpty() }.mapValues { (_, broadcasts) ->
+                broadcasts.map { SportsFeedTile(it, parseSportsFeedLabel(it.channel.name)) }
+                    .sortedByDescending { it.fixture != null }
+            }.entries.sortedBy { it.key.displayName }
     }
     val availableLeagues = state.events.asSequence()
         .filter { it.matches(state.selectedSportFilter) && it.sport.discoveryKey !in state.excludedSports &&
             it.leagueFilterKey !in state.excludedLeagues }
         .mapNotNull { event -> event.leagueFilterKey?.let { key ->
-            SportsLeagueFilterOption(key, event.localizedLeagueName(eflChampionshipLabel).orEmpty())
+            SportsLeagueFilterOption(key, event.localizedLeagueName(eflChampionshipLabel).orEmpty(), event.sport)
         } }
-        .plus(channelLeagues.keys.asSequence().map { SportsLeagueFilterOption(it.id, it.displayName) })
+        .plus(channelLeagues.keys.asSequence().map { SportsLeagueFilterOption(it.id, it.displayName, it.sport) })
         .filter { it.label.isNotBlank() }
         .distinctBy(SportsLeagueFilterOption::id)
         .sortedBy { it.label }
         .toList()
     val fallbackLeague = stringResource(R.string.nav_sports)
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+    val fullRow: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(248.dp),
+        modifier = Modifier.fillMaxSize().background(if (BrowseColors.current.isLight) BrowseColors.Canvas else Color(0xFF10141E)),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(horizontal = 28.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item(key = "sports-header") {
+        item(key = "sports-header", span = fullRow) {
             AdaptiveRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -217,7 +228,7 @@ internal fun SportsHubContent(
                 SportsTimeRangeFilters(state.selectedTimeRange, onSelectTimeRange)
             }
         }
-        item(key = "sports-filters") {
+        item(key = "sports-filters", span = fullRow) {
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .clip(BrowseShapes.Panel)
@@ -235,9 +246,9 @@ internal fun SportsHubContent(
             }
         }
         when {
-            state.isLoading -> item { SportsLoadingState() }
-            state.hasError -> item { SportsErrorState(onRetry) }
-            visibleEvents.isEmpty() -> if (channelRows.isEmpty()) item { SportsEmptyState() } else Unit
+            state.isLoading -> item(span = fullRow) { SportsLoadingState() }
+            state.hasError -> item(span = fullRow) { SportsErrorState(onRetry) }
+            visibleEvents.isEmpty() -> if (channelRows.isEmpty()) item(span = fullRow) { SportsEmptyState() } else Unit
             else -> {
                 val leagueGroups = visibleEvents.groupBy { event ->
                     event.leagueFilterKey ?: event.categoryLabel?.let {
@@ -253,7 +264,7 @@ internal fun SportsHubContent(
                 }.thenByDescending { it.third.size })
                 val leadEvents = leagueGroups.first().third
                 val featured = leadEvents.firstOrNull { it.competitors.size == 2 } ?: leadEvents.first()
-                item(key = "sports-featured") {
+                item(key = "sports-featured", span = fullRow) {
                     FeaturedSportsEvent(
                         event = featured,
                         isLive = featured.isLiveAt(state.nowMillis),
@@ -263,50 +274,40 @@ internal fun SportsHubContent(
                     )
                 }
                 leagueGroups.forEach { (leagueKey, league, events) ->
-                    item(key = "league:$leagueKey") {
-                        val attributionLines = events.maxOf { event ->
-                            event.attributionCredits.sumOf { it.lineCount }
-                        }
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(league, fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
-                                color = BrowseColors.TextPrimary)
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth().focusGroup(),
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                items(events, key = SportsEvent::id) { event ->
-                                    SportsEventCard(
-                                        event = event,
-                                        isLive = event.isLiveAt(state.nowMillis),
-                                        showDate = state.selectedTimeRange == SportsTimeRange.UPCOMING,
-                                        attributionLines = attributionLines,
-                                        onShowDetails = { detailsEvent = it },
-                                    )
-                                }
-                            }
-                        }
+                    item(key = "league:$leagueKey", span = fullRow) {
+                        Text(league, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
+                    }
+                    gridItems(events, key = { "event:${it.id}" }) { event ->
+                        SportsEventCard(
+                            event = event, isLive = event.isLiveAt(state.nowMillis),
+                            showDate = state.selectedTimeRange == SportsTimeRange.UPCOMING,
+                            attributionLines = event.attributionCredits.sumOf { it.lineCount },
+                            onShowDetails = { detailsEvent = it },
+                        )
                     }
                 }
             }
         }
         channelRows.forEach { (league, channels) ->
-            item(key = "channels:${league.id}") {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(league.displayName, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
-                        Text(stringResource(R.string.live_sports_channel_choices, channels.size),
-                            fontSize = 12.sp, color = BrowseColors.TextSecondary)
-                    }
-                    LazyRow(modifier = Modifier.fillMaxWidth().focusGroup(),
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        items(channels, key = { it.channelIdentityKey() }) { broadcast ->
-                            SportsChannelButton(channel = broadcast.channel, modifier = Modifier.widthIn(max = 320.dp),
-                                onClick = { onPlayBroadcast(broadcast) })
+            val overview = state.selectedLeagueFilter == null && channels.size > 3
+            item(key = "channels:${league.id}", span = fullRow) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(league.displayName, modifier = Modifier.weight(1f), fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
+                    val count = stringResource(R.string.live_sports_channel_choices, channels.size)
+                    if (overview) {
+                        TvButton(onClick = { onSelectLeagueFilter(league.id) }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)) {
+                            Text(count, fontSize = 11.sp)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, modifier = Modifier.size(18.dp))
                         }
+                    } else {
+                        Text(count, fontSize = 12.sp, color = BrowseColors.TextSecondary)
                     }
                 }
+            }
+            gridItems(if (overview) channels.take(3) else channels,
+                key = { "feed:${league.id}:${it.broadcast.channelIdentityKey()}" }) { feed ->
+                SportsFeedCard(league, feed) { onPlayBroadcast(feed.broadcast) }
             }
         }
     }
@@ -424,21 +425,16 @@ private fun SportsLeagueFilters(
     selected: String?,
     onSelected: (String?) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()).padding(3.dp).focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().focusGroup(),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        SportsFilterButton(
-            label = stringResource(R.string.live_sports_filter_all_leagues),
-            selected = selected == null,
-            onClick = { onSelected(null) },
-        )
-        leagues.forEach { league ->
-            SportsFilterButton(
-                label = league.label,
-                selected = selected == league.id,
-                onClick = { onSelected(league.id) },
-            )
+        item(key = "all") {
+            LeagueBadge(stringResource(R.string.live_sports_filter_all_leagues), null, selected == null) { onSelected(null) }
+        }
+        items(leagues, key = { it.id }) { league ->
+            LeagueBadge(league.label, league.sport, selected == league.id) { onSelected(league.id) }
         }
     }
 }
@@ -700,7 +696,8 @@ private fun SportsEventCard(
 ) {
     TvClickableSurface(
         onClick = { onShowDetails(event) },
-        modifier = Modifier.width(244.dp).height(172.dp + 18.dp * attributionLines),
+        modifier = Modifier.fillMaxWidth().height(172.dp + 18.dp * attributionLines),
+        border = sportsCardBorder(RoundedCornerShape(10.dp)),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
     ) {
