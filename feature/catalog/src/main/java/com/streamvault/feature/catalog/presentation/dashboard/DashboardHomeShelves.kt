@@ -1,6 +1,24 @@
 package com.streamvault.feature.catalog.presentation.dashboard
 
 import com.streamvault.domain.model.AppHomeDashboardShelf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun <T> Flow<List<AppHomeDashboardShelf>>.observeWhenHomeShelfEnabled(
+    shelf: AppHomeDashboardShelf,
+    emptyValue: T,
+    observe: () -> Flow<T>,
+): Flow<T> = map { shelf in it }
+    .distinctUntilChanged()
+    .flatMapLatest { enabled -> if (enabled) observe() else flowOf(emptyValue) }
+    .onStart { emit(emptyValue) }
+    .distinctUntilChanged()
 
 internal fun resolveVisibleDashboardShelves(
     uiState: DashboardUiState

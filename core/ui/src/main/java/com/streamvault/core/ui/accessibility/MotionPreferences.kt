@@ -6,12 +6,16 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+
+private val LocalReducedMotion = compositionLocalOf<Boolean?> { null }
 
 fun isReducedMotionEnabled(context: Context): Boolean {
     val animatorScale = runCatching {
@@ -21,7 +25,15 @@ fun isReducedMotionEnabled(context: Context): Boolean {
 }
 
 @Composable
-fun rememberReducedMotionEnabled(): Boolean {
+fun rememberReducedMotionEnabled(): Boolean = LocalReducedMotion.current ?: observeReducedMotion()
+
+@Composable
+internal fun ProvideMotionPreferences(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalReducedMotion provides observeReducedMotion(), content = content)
+}
+
+@Composable
+private fun observeReducedMotion(): Boolean {
     val context = LocalContext.current
     var reducedMotionEnabled by remember(context) {
         mutableStateOf(isReducedMotionEnabled(context))

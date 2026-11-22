@@ -66,7 +66,7 @@ internal data class SportsHubUiState(
     val isLoading: Boolean = true,
     val hasError: Boolean = false,
     val events: List<SportsEvent> = emptyList(),
-    val leagueChannels: Map<SportsLeague, List<SportsBroadcast>> = emptyMap(),
+    val leagueChannels: Map<SportsLeague, List<SportsDirectoryChannel>> = emptyMap(),
     val selectedTimeRange: SportsTimeRange = SportsTimeRange.ON_NOW,
     val selectedSportFilter: SportsSportFilter = SportsSportFilter.ALL,
     val selectedLeagueFilter: String? = null,
@@ -265,17 +265,23 @@ internal class SportsHubRepository @Inject constructor(
                 previouslyActive = active
                 if (previousInputs != inputs) {
                     eventIndexCache.clear()
-                    fallbackChannelIndexCache = null
-                    availableChannelEntries = emptyList()
                     if (previousInputs?.retry != inputs.retry) classificationCache.clear()
                     val channelsChanged = previousInputs?.providers != inputs.providers
                     _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false,
                         leagueChannels = if (channelsChanged) emptyMap() else it.leagueChannels) }
                     if (channelsChanged) {
-                        val directory = withContext(Dispatchers.Default) {
-                            inputs.providers.flatMap { taggedSportsChannels(it.channels, it.combinedProfileId) }
-                                .groupBy({ it.first }, { it.second })
+                        fallbackChannelIndexCache = null
+                        availableChannelEntries = emptyList()
+                        val (entries, directory) = withContext(Dispatchers.Default) {
+                            val entries = inputs.providers.flatMap { provider ->
+                                provider.channels.map { SportsChannelIndexEntry(it, provider.combinedProfileId) }
+                            }
+                            val directory = inputs.providers.flatMap { provider ->
+                                taggedSportsChannels(provider.channels, provider.combinedProfileId)
+                            }.groupBy({ it.first }, { (league, broadcast) -> SportsDirectoryChannel(league, broadcast) })
+                            entries to directory
                         }
+                        availableChannelEntries = entries
                         _uiState.update { it.copy(leagueChannels = directory) }
                     }
                     previousInputs = inputs
@@ -402,9 +408,7 @@ internal class SportsHubRepository @Inject constructor(
                 cached.events to cached.providerEvents
             } ?: withContext(Dispatchers.Default) {
                 val (requestFromMillis, requestUntilMillis) = providerEventRequestWindow(range, now, window)
-                availableChannelEntries = providerChannels.flatMap { provider ->
-                    provider.channels.map { SportsChannelIndexEntry(it, provider.combinedProfileId) }
-                }
+                val entries = availableChannelEntries
                 val providerTask = async {
                     withTimeoutOrNull(PROVIDER_LOAD_TIMEOUT_MS) {
                         sportsProviderEventSourceRouter.load(
@@ -427,12 +431,11 @@ internal class SportsHubRepository @Inject constructor(
                         }
                     }
                 }
-                val providerData = buildList {
+                val candidates = buildList {
                     providerChannels.forEach { provider ->
-                        add(loadProviderCandidates(provider, range, now, window))
+                        addAll(loadProviderCandidates(provider, range, now, window))
                     }
                 }
-                val candidates = providerData.flatMap { it.candidates }
                 val assemblyStartedAt = SystemClock.elapsedRealtime()
                 val assembled = SportsEventAssembler.assemble(candidates)
                 SportsDiagnostics.performance(
@@ -441,8 +444,6 @@ internal class SportsHubRepository @Inject constructor(
                     itemCount = assembled.size,
                     groupCount = candidates.size,
                 )
-                val entries = providerData.flatMap { it.channels }
-                availableChannelEntries = entries
                 // The guide is usable immediately, even when a remote API is slow.
                 if (!providerTask.isCompleted && (assembled.isNotEmpty() || eventProviders.isEmpty())) {
                     withContext(Dispatchers.Main.immediate) { publishEvents(assembled, range, now, window) }
@@ -817,7 +818,7 @@ internal class SportsHubRepository @Inject constructor(
         if (entries.isEmpty()) return emptyList()
         return withContext(Dispatchers.Default) {
             val index = getFallbackChannelIndex(entries)
-            if (availableChannelEntries != entries) return@withContext emptyList()
+            if (availableChannelEntries !== entries) return@withContext emptyList()
             SportsChannelFallbackMatcher.searchChannels(event, index, query).map { match ->
                 SportsBroadcast(
                     channel = match.entry.channel,
@@ -851,10 +852,10 @@ internal class SportsHubRepository @Inject constructor(
     }
 
     private fun getFallbackChannelIndex(entries: List<SportsChannelIndexEntry>): SportsChannelIndex {
-        fallbackChannelIndexCache?.takeIf { it.entries == entries }?.let { return it.index }
+        fallbackChannelIndexCache?.takeIf { it.entries === entries }?.let { return it.index }
         val startedAt = SystemClock.elapsedRealtime()
         return SportsChannelIndex.build(entries).also { index ->
-            if (availableChannelEntries == entries) {
+            if (availableChannelEntries === entries) {
                 fallbackChannelIndexCache = CachedSportsChannelIndex(entries, index)
             }
             SportsDiagnostics.performance(
@@ -884,11 +885,11 @@ internal class SportsHubRepository @Inject constructor(
         range: SportsTimeRange,
         now: Long,
         window: SportsTimeWindow,
-    ): LoadedSportsProvider {
+    ): List<SportsEventCandidate> {
         val providerId = provider.providerId
         val combinedProfileId = provider.combinedProfileId
         val channels = provider.channels
-        if (channels.isEmpty()) return LoadedSportsProvider(emptyList(), emptyList())
+        if (channels.isEmpty()) return emptyList()
 
         val diagnosticsEnabled = SportsDiagnostics.isEnabled()
         val channelMatchConfidences = if (diagnosticsEnabled) {
@@ -981,10 +982,7 @@ internal class SportsHubRepository @Inject constructor(
             entries = cacheStats.entries,
             estimatedBytes = cacheStats.estimatedBytes,
         )
-        return LoadedSportsProvider(
-            candidates = candidates,
-            channels = channels.map { channel -> SportsChannelIndexEntry(channel, combinedProfileId) },
-        )
+        return candidates
     }
 
     private fun windowFor(range: SportsTimeRange, now: Long): SportsTimeWindow {
@@ -1048,11 +1046,6 @@ internal class SportsHubRepository @Inject constructor(
         val scoreSourcePreference: SportsScoreSourcePreference,
         val metadataSourcePreference: SportsMetadataSourcePreference,
         val providerRevision: Long,
-    )
-
-    private data class LoadedSportsProvider(
-        val candidates: List<SportsEventCandidate>,
-        val channels: List<SportsChannelIndexEntry>,
     )
 
     private data class CachedSportsChannelIndex(

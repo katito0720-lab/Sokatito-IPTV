@@ -475,18 +475,13 @@ private fun PosterCard(
 ) {
     val posterShape = BrowseShapes.Artwork
     var imageLoaded by remember(imageUrl) { mutableStateOf(false) }
-    var imageFailed by remember(imageUrl) { mutableStateOf(false) }
-    val showFallback = imageUrl.isNullOrBlank() || imageFailed || !imageLoaded
 
     Box(
-        modifier = modifier
-            .clip(posterShape)
-            .background(Brush.linearGradient(listOf(AppColors.SurfaceEmphasis, AppColors.Surface, AppColors.Brand.copy(alpha = 0.18f))))
+        modifier = modifier.clip(posterShape)
     ) {
-        // Fallback letter: only shown while no URL, still loading, or load failed
-        if (showFallback) {
+        if (!imageLoaded) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().background(AppColors.SurfaceEmphasis),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -498,14 +493,12 @@ private fun PosterCard(
         }
         if (!imageUrl.isNullOrBlank()) {
             AsyncImage(
-                model = rememberCrossfadeImageModel(imageUrl),
+                model = rememberCrossfadeImageModel(imageUrl, allowCrossfade = false),
                 contentDescription = title,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(posterShape),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 onSuccess = { imageLoaded = true },
-                onError = { imageFailed = true }
+                onError = { imageLoaded = false }
             )
         }
 

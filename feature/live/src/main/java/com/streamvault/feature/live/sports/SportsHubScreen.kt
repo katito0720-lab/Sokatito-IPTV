@@ -170,7 +170,11 @@ internal fun SportsHubContent(
     var manualPickerEvent by remember { mutableStateOf<SportsEvent?>(null) }
     val actionScope = rememberCoroutineScope()
     var inclusionsOpen by remember { mutableStateOf(false) }
-    val visibleEvents = state.events.filter { it.matchesDiscovery(state) }
+    val searchTerms = remember(state.searchQuery) { sportsSearchTerms(state.searchQuery) }
+    val visibleEvents = remember(state.events, state.selectedSportFilter, state.selectedLeagueFilter,
+        state.excludedSports, state.excludedLeagues, searchTerms) {
+        state.events.filter { it.matchesDiscovery(state, searchTerms) }
+    }
     val eflChampionshipLabel = stringResource(R.string.live_sports_league_efl_championship)
     val channelLeagues = remember(state.leagueChannels, state.selectedTimeRange, state.selectedSportFilter,
         state.excludedSports, state.excludedLeagues) {
@@ -180,25 +184,22 @@ internal fun SportsHubContent(
                 league.id !in state.excludedLeagues
         }
     }
-    val channelRows = remember(channelLeagues, state.selectedLeagueFilter, state.searchQuery, state.events, state.nowMillis) {
-        val eventsByChannel = state.events.flatMap { event ->
-            event.broadcasts.map { it.channelIdentityKey() to event }
+    val confirmedLiveByChannel = remember(state.events, state.nowMillis) {
+        state.events.asSequence().filter { it.isLiveAt(state.nowMillis) }.flatMap { event ->
+            event.broadcasts.asSequence().map { it.channelIdentityKey() to event }
         }.groupBy({ it.first }, { it.second })
-        val terms = SportsTextNormalizer.normalize(state.searchQuery).split(' ').filter(String::isNotBlank)
+    }
+    val channelRows = remember(channelLeagues, state.selectedLeagueFilter, searchTerms, confirmedLiveByChannel) {
         channelLeagues.filterKeys { state.selectedLeagueFilter == null || it.id == state.selectedLeagueFilter }
             .mapValues { (league, channels) ->
-                if (terms.isEmpty()) channels else channels.filter { broadcast ->
-                    val channel = broadcast.channel
-                    val label = SportsTextNormalizer.normalize(listOfNotNull(channel.name, channel.sportsProviderLabel, channel.groupTitle,
-                        channel.categoryName, league.displayName).joinToString(" "))
-                    terms.all { term -> term in label || league.aliases.any { term in it } }
+                if (searchTerms.isEmpty()) channels else channels.filter { entry ->
+                    searchTerms.all { term -> term in entry.searchText || league.aliases.any { term in it } }
                 }
-            }.filterValues { it.isNotEmpty() }.mapValues { (_, broadcasts) ->
-                broadcasts.map {
-                    val label = it.channel.sportsProviderLabel
-                    val listing = parsePlaylistSportsEvent(label)
-                    val tile = SportsFeedTile(it, parseSportsFeedLabel(label, listing), listing = listing)
-                    tile.copy(isLive = tile.isLiveAt(eventsByChannel[it.channelIdentityKey()].orEmpty(), state.nowMillis))
+            }.filterValues { it.isNotEmpty() }.mapValues { (_, channels) ->
+                channels.map { entry ->
+                    val tile = entry.tile
+                    val liveEvents = confirmedLiveByChannel[tile.broadcast.channelIdentityKey()]
+                    if (liveEvents != null && tile.isLiveAt(liveEvents, state.nowMillis)) tile.copy(isLive = true) else tile
                 }.sortedWith(compareByDescending<SportsFeedTile> { it.isLive }
                     .thenByDescending { it.fixture != null || it.listing != null })
             }.entries.sortedWith(compareByDescending<Map.Entry<SportsLeague, List<SportsFeedTile>>> {
@@ -257,7 +258,7 @@ internal fun SportsHubContent(
             }
         }
         when {
-            state.isLoading -> item(span = fullRow) { SportsLoadingState() }
+            state.isLoading -> if (channelRows.isEmpty()) item(span = fullRow) { SportsLoadingState() } else Unit
             state.hasError -> item(span = fullRow) { SportsErrorState(onRetry) }
             visibleEvents.isEmpty() -> if (channelRows.isEmpty()) item(span = fullRow) { SportsEmptyState() } else Unit
             else -> {

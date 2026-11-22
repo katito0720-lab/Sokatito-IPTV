@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme as StandardMaterialTheme
 import androidx.compose.material3.darkColorScheme as standardDarkColorScheme
 import androidx.compose.material3.lightColorScheme as standardLightColorScheme
 import com.streamvault.core.ui.design.AppColors
+import com.streamvault.core.ui.accessibility.ProvideMotionPreferences
 import com.streamvault.core.ui.design.AppPalette
 import com.streamvault.core.ui.design.AppShapes
 import com.streamvault.core.ui.design.LocalAppShapes
@@ -77,14 +78,16 @@ fun StreamVaultTheme(
         ) else AppSpacing(),
         LocalAppShapes provides AppShapes()
     ) {
-        MaterialTheme(
-            colorScheme = tvColorScheme,
-            typography = typography,
-        ) {
-            StandardMaterialTheme(
-                colorScheme = standardColorScheme,
-                content = content,
-            )
+        ProvideMotionPreferences {
+            MaterialTheme(
+                colorScheme = tvColorScheme,
+                typography = typography,
+            ) {
+                StandardMaterialTheme(
+                    colorScheme = standardColorScheme,
+                    content = content,
+                )
+            }
         }
     }
 }

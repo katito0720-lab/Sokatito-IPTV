@@ -18,7 +18,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /** A decorative overlay. The activity can load and accept input underneath it. */
-internal class SokatitoOpeningEffect(context: Context) : View(context) {
+internal class SokatitoOpeningEffect(context: Context, private val onDismissed: () -> Unit) : View(context) {
     private companion object {
         const val ENTRANCE_MS = 425L
         const val RING_MS = 850L
@@ -98,7 +98,9 @@ internal class SokatitoOpeningEffect(context: Context) : View(context) {
     }
 
     fun dismiss() {
-        (parent as? ViewGroup)?.removeView(this)
+        val host = parent as? ViewGroup ?: return
+        host.removeView(this)
+        onDismissed()
     }
 
     override fun onDetachedFromWindow() {

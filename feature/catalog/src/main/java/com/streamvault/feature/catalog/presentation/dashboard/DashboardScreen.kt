@@ -110,7 +110,6 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val recordingChannelIds by viewModel.recordingChannelIds.collectAsStateWithLifecycle()
     val scheduledChannelIds by viewModel.scheduledChannelIds.collectAsStateWithLifecycle()
-    val nowMs by CatalogChannelProgressTicker.nowMs.collectAsStateWithLifecycle()
     val provider = uiState.provider
     val snackbarHostState = remember { SnackbarHostState() }
     var showHomeCustomizationDialog by rememberSaveable { mutableStateOf(false) }
@@ -283,19 +282,22 @@ fun DashboardScreen(
                         }
                     )
 
-                    AppHomeDashboardShelf.RECENT_CHANNELS -> CategoryRow(
-                        title = stringResource(R.string.dashboard_recent_channels),
-                        items = uiState.recentChannels,
-                        keySelector = { it.id },
-                        onSeeAll = { onDestinationRequested(AppDestination.LiveTv(com.streamvault.domain.model.VirtualCategoryIds.RECENT)) }
-                    ) { channel ->
-                        ChannelCard(
-                            channel = channel,
-                            nowMs = nowMs,
-                            isRecording = channel.id in recordingChannelIds,
-                            isScheduledRecording = channel.id in scheduledChannelIds,
-                            onClick = { onRecentChannelClick(channel, uiState.currentCombinedProfileId) }
-                        )
+                    AppHomeDashboardShelf.RECENT_CHANNELS -> {
+                        val nowMs by CatalogChannelProgressTicker.nowMs.collectAsStateWithLifecycle()
+                        CategoryRow(
+                            title = stringResource(R.string.dashboard_recent_channels),
+                            items = uiState.recentChannels,
+                            keySelector = { it.id },
+                            onSeeAll = { onDestinationRequested(AppDestination.LiveTv(com.streamvault.domain.model.VirtualCategoryIds.RECENT)) }
+                        ) { channel ->
+                            ChannelCard(
+                                channel = channel,
+                                nowMs = nowMs,
+                                isRecording = channel.id in recordingChannelIds,
+                                isScheduledRecording = channel.id in scheduledChannelIds,
+                                onClick = { onRecentChannelClick(channel, uiState.currentCombinedProfileId) }
+                            )
+                        }
                     }
 
                     AppHomeDashboardShelf.CONTINUE_WATCHING -> ContinueWatchingRow(
@@ -440,7 +442,8 @@ private fun DashboardMoviePoster(
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    MovieCard(movie = movie, onClick = onClick, isLocked = isLocked, onLongClick = onLongClick, width = 116.dp, height = 174.dp)
+    MovieCard(movie = movie, onClick = onClick, isLocked = isLocked, onLongClick = onLongClick,
+        width = 116.dp, height = 174.dp, animateFocus = false)
 }
 
 @Composable
@@ -452,7 +455,7 @@ private fun DashboardSeriesPoster(
     onClick: () -> Unit,
 ) {
     SeriesCard(series = series, subtitle = subtitle, onClick = onClick, isLocked = isLocked,
-        onLongClick = onLongClick, width = 116.dp, height = 174.dp)
+        onLongClick = onLongClick, width = 116.dp, height = 174.dp, animateFocus = false)
 }
 
 private fun Series.rawSeriesIdsForNavigation(): List<Long> =

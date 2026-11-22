@@ -14,12 +14,17 @@ internal fun sportsDescriptionForPresentation(description: String): String = des
     .replace("\r\n", "\n")
     .trim()
 
-internal fun SportsEvent.matchesDiscovery(state: SportsHubUiState): Boolean {
+internal fun sportsSearchTerms(query: String): List<String> =
+    SportsTextNormalizer.normalize(query).split(' ').filter(String::isNotBlank)
+
+internal fun SportsEvent.matchesDiscovery(
+    state: SportsHubUiState,
+    searchTerms: List<String> = sportsSearchTerms(state.searchQuery),
+): Boolean {
     if (sport.discoveryKey in state.excludedSports || leagueFilterKey in state.excludedLeagues) return false
     if (!matches(state.selectedSportFilter)) return false
     if (state.selectedLeagueFilter != null && leagueFilterKey != state.selectedLeagueFilter) return false
-    val query = SportsTextNormalizer.normalize(state.searchQuery).split(' ').filter(String::isNotBlank)
-    if (query.isEmpty()) return true
+    if (searchTerms.isEmpty()) return true
     val text = SportsTextNormalizer.normalize(buildList {
         add(title)
         league?.let(::add)
@@ -27,7 +32,7 @@ internal fun SportsEvent.matchesDiscovery(state: SportsHubUiState): Boolean {
         provenance.score?.value?.scores?.forEach { add(it.competitor.name) }
         provenance.teamMetadata?.value?.forEach { add(it.team.name) }
     }.joinToString(" "))
-    return query.all(text::contains)
+    return searchTerms.all(text::contains)
 }
 
 /** Keep recent enrichment when a refresh has only partial data, without keeping old fixtures. */

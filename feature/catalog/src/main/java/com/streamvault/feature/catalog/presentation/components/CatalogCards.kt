@@ -93,6 +93,7 @@ fun FocusableCard(
     isDragging: Boolean = false,
     semanticsDescription: String? = null,
     semanticsStateDescription: String? = null,
+    animateFocus: Boolean = true,
     content: @Composable BoxScope.(Boolean) -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -100,15 +101,19 @@ fun FocusableCard(
     val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
     val reducedMotionEnabled = rememberReducedMotionEnabled()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) {
-            if (isReorderMode && !isDragging) 1f else FocusSpec.FocusedScale
-        } else {
-            if (isDragging) FocusSpec.FocusedScale else 1f
-        },
-        animationSpec = if (reducedMotionEnabled) snap() else tween(durationMillis = 160),
-        label = "cardScale"
-    )
+    val focusTransform = if (animateFocus || isDragging) {
+        val scale by animateFloatAsState(
+            targetValue = if (isDragging || (isFocused && !isReorderMode)) FocusSpec.FocusedScale else 1f,
+            animationSpec = if (reducedMotionEnabled) snap() else tween(durationMillis = 160),
+            label = "cardScale",
+        )
+        Modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+    } else {
+        Modifier
+    }
 
     Surface(
         onClick = {
@@ -128,10 +133,7 @@ fun FocusableCard(
                     onClick()
                 }
             )
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
+            .then(focusTransform)
             .semantics(mergeDescendants = true) {
                 semanticsDescription?.let { contentDescription = it }
                 semanticsStateDescription?.let { stateDescription = it }
@@ -145,7 +147,7 @@ fun FocusableCard(
         shape = ClickableSurfaceDefaults.shape(BrowseShapes.Artwork),
         scale = ClickableSurfaceDefaults.scale(
             focusedScale = 1f,
-            pressedScale = FocusSpec.PressedScale
+            pressedScale = if (animateFocus) FocusSpec.PressedScale else 1f
         ),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Surface,
@@ -379,7 +381,8 @@ fun MovieCard(
     isReorderMode: Boolean = false,
     isDragging: Boolean = false,
     width: Dp = 136.dp,
-    height: Dp = 204.dp
+    height: Dp = 204.dp,
+    animateFocus: Boolean = true,
 ) {
     val movieDescription = buildString {
         append(movie.name)
@@ -401,7 +404,8 @@ fun MovieCard(
         isReorderMode = isReorderMode,
         isDragging = isDragging,
         semanticsDescription = movieDescription,
-        semanticsStateDescription = if (isLocked) stringResource(R.string.a11y_locked) else null
+        semanticsStateDescription = if (isLocked) stringResource(R.string.a11y_locked) else null,
+        animateFocus = animateFocus,
     ) {
         if (!isLocked) {
             MoviePosterCard(
@@ -496,7 +500,8 @@ fun SeriesCard(
     isReorderMode: Boolean = false,
     isDragging: Boolean = false,
     width: Dp = 136.dp,
-    height: Dp = 204.dp
+    height: Dp = 204.dp,
+    animateFocus: Boolean = true,
 ) {
     val seriesDescription = buildString {
         append(series.name)
@@ -521,7 +526,8 @@ fun SeriesCard(
         isReorderMode = isReorderMode,
         isDragging = isDragging,
         semanticsDescription = seriesDescription,
-        semanticsStateDescription = if (isLocked) stringResource(R.string.a11y_locked) else null
+        semanticsStateDescription = if (isLocked) stringResource(R.string.a11y_locked) else null,
+        animateFocus = animateFocus,
     ) {
         if (!isLocked) {
             SeriesPosterCard(

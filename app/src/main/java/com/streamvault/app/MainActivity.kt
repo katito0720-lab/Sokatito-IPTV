@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.view.doOnPreDraw
+import androidx.lifecycle.Lifecycle
 import com.streamvault.app.cast.CastRouteChooserActivity
 import com.streamvault.app.device.isTelevisionDevice
 import com.streamvault.core.ui.localization.resolveAppLocale
@@ -19,13 +20,11 @@ import com.streamvault.app.navigation.ExternalNavigationRequestParser
 import com.streamvault.core.navigation.PlayerNavigationRequest
 import com.streamvault.core.navigation.ExternalNavigationRequest
 import com.streamvault.core.navigation.AppDestination
-import com.streamvault.feature.playback.cast.CastManager
 import com.streamvault.core.ui.theme.StreamVaultTheme
 import com.streamvault.app.ui.time.LocalAppTimeFormat
 import com.streamvault.app.ui.time.toUiTimeFormat
 import com.streamvault.feature.live.presentation.time.LocalLiveTimeFormat
 import com.streamvault.core.ui.time.LocalUiTimeFormat
-import com.streamvault.domain.repository.ProviderRepository
 import com.streamvault.domain.model.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -102,13 +101,7 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
     lateinit var preferencesRepository: PreferencesRepository
 
     @Inject
-    lateinit var providerRepository: ProviderRepository
-
-    @Inject
     internal lateinit var appStartupCoordinator: AppStartupCoordinator
-
-    @Inject
-    lateinit var castManager: CastManager
 
     @Inject
     lateinit var databaseStartupCoordinator: DatabaseStartupCoordinator
@@ -168,8 +161,11 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
     }
 
     private var playerPictureInPictureState = PlayerPictureInPictureState()
+    private val televisionDevice by lazy(LazyThreadSafetyMode.NONE) { isTelevisionDevice() }
     private var openingEffect: SokatitoOpeningEffect? = null
     private var skipOpeningEffectOnStart = false
+    private var firstUiFrameDrawn = false
+    private var tvIntegrationsStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         if (BuildConfig.DEBUG) {
@@ -189,7 +185,7 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
         applyImmersiveSystemUi()
         _pictureInPictureModeFlow.value = isInPictureInPictureMode
         handleExternalIntent(intent)
-        if (isTelevisionDevice()) {
+        if (televisionDevice) {
             // Lock TVs to landscape — the manifest uses "unspecified" so phones/tablets
             // can freely rotate, but TV UI is designed for landscape only.
             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -263,9 +259,12 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
                             )
                             LaunchedEffect(Unit) {
                                 dispatchPendingExternalNavigationRequests()
-                                window.decorView.doOnPreDraw {
-                                    window.decorView.post {
-                                        appStartupCoordinator.onFirstUiFrameDrawn(isTelevisionDevice())
+                                if (televisionDevice) {
+                                    window.decorView.doOnPreDraw {
+                                        window.decorView.post {
+                                            firstUiFrameDrawn = true
+                                            startTvIntegrationsIfReady()
+                                        }
                                     }
                                 }
                             }
@@ -274,13 +273,15 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
                 }
             }
         }
-        databaseStartupCoordinator.start()
     }
 
     override fun onStart() {
         super.onStart()
         if (!skipOpeningEffectOnStart) showOpeningEffectFor(intent)
         skipOpeningEffectOnStart = false
+        if (firstUiFrameDrawn && !tvIntegrationsStarted) {
+            window.decorView.post(::startTvIntegrationsIfReady)
+        }
     }
 
     private fun showOpeningEffectFor(request: Intent) {
@@ -292,9 +293,22 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
             return
         }
         if (isInPictureInPictureMode || openingEffect?.parent != null) return
-        openingEffect = SokatitoOpeningEffect(this).also {
+        openingEffect = SokatitoOpeningEffect(this) {
+            window.decorView.post(::startTvIntegrationsIfReady)
+        }.also {
             it.showIn(findViewById(android.R.id.content))
         }
+    }
+
+    private fun startTvIntegrationsIfReady() {
+        // Full launcher and TV input catalog refreshes compete with the opening animation
+        // and with in-app catalog loading. Start them once the user can see the content.
+        if (!firstUiFrameDrawn || tvIntegrationsStarted || openingEffect?.parent != null ||
+            !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        ) return
+
+        tvIntegrationsStarted = true
+        appStartupCoordinator.onFirstUiFrameDrawn(isTelevision = true)
     }
 
     override fun onStop() {
@@ -335,7 +349,7 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             showOpeningEffectFor(intent)
         }
         handleExternalIntent(intent)

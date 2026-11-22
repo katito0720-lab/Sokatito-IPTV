@@ -5,9 +5,55 @@ import com.streamvault.domain.model.AppHomeDashboardShelf
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.Movie
 import com.streamvault.domain.model.Series
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 class DashboardHomeShelvesTest {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `optional shelf only observes while enabled and keeps running when reordered`() = runTest {
+        val recommended = AppHomeDashboardShelf.RECOMMENDED_MOVIES
+        val recent = AppHomeDashboardShelf.RECENT_MOVIES
+        val enabledShelves = MutableStateFlow(listOf(recent))
+        val states = mutableListOf<List<Int>>()
+        var subscriptions = 0
+        var cancellations = 0
+        backgroundScope.launch {
+            enabledShelves.observeWhenHomeShelfEnabled(recommended, emptyList<Int>()) {
+                flow {
+                    subscriptions++
+                    try {
+                        emit(listOf(1))
+                        awaitCancellation()
+                    } finally {
+                        cancellations++
+                    }
+                }
+            }.collect { states.add(it) }
+        }
+
+        runCurrent()
+        assertThat(subscriptions).isEqualTo(0)
+        enabledShelves.value = listOf(recent, recommended)
+        runCurrent()
+        assertThat(subscriptions).isEqualTo(1)
+        assertThat(states.last()).containsExactly(1)
+        enabledShelves.value = listOf(recommended, recent)
+        runCurrent()
+        assertThat(subscriptions).isEqualTo(1)
+        enabledShelves.value = listOf(recent)
+        runCurrent()
+        assertThat(cancellations).isEqualTo(1)
+        assertThat(states.last()).isEmpty()
+    }
 
     @Test
     fun `resolveVisibleDashboardShelves keeps enabled order and filters empty shelves`() {

@@ -8,14 +8,14 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 
 @Composable
-fun rememberCrossfadeImageModel(data: Any?): Any? {
+fun rememberCrossfadeImageModel(data: Any?, allowCrossfade: Boolean = true): Any? {
     val context = LocalContext.current
-    val reducedMotionEnabled = rememberReducedMotionEnabled()
-    return remember(context, data, reducedMotionEnabled) {
+    val crossfade = allowCrossfade && !rememberReducedMotionEnabled()
+    return remember(context, data, crossfade) {
         data?.let {
             ImageRequest.Builder(context)
                 .data(it)
-                .crossfade(!reducedMotionEnabled)
+                .crossfade(crossfade)
                 .build()
         }
     }

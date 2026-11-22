@@ -29,6 +29,27 @@ private val sportChannels = SportType.entries.associateWith { sport ->
 internal val Channel.sportsProviderLabel: String
     get() = currentVariant?.originalName?.takeIf(String::isNotBlank) ?: name
 
+internal data class SportsDirectoryChannel(
+    val tile: SportsFeedTile,
+    val searchText: String,
+) {
+    constructor(league: SportsLeague, broadcast: SportsBroadcast) : this(
+        tile = broadcast.toDirectoryTile(),
+        searchText = SportsTextNormalizer.normalize(
+            listOfNotNull(
+                broadcast.channel.name, broadcast.channel.sportsProviderLabel, broadcast.channel.groupTitle,
+                broadcast.channel.categoryName, league.displayName,
+            ).joinToString(" "),
+        ),
+    )
+}
+
+private fun SportsBroadcast.toDirectoryTile(): SportsFeedTile {
+    val label = channel.sportsProviderLabel
+    val listing = parsePlaylistSportsEvent(label)
+    return SportsFeedTile(this, parseSportsFeedLabel(label, listing), listing = listing)
+}
+
 private fun channelLeague(label: String): SportsLeague? {
     val league = SportsLeagueRegistry.detectChannelTag(label.replace(numberedLeagueFeed, "$1 ")) ?: return null
     if (league.id != "premier-league") return league
