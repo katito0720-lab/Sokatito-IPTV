@@ -164,6 +164,7 @@ fun LiveEpgScreen(
     initialCategoryId: Long? = null,
     initialAnchorTime: Long? = null,
     initialFavoritesOnly: Boolean = false,
+    initialChannelId: Long? = null,
     onPlayChannel: (Channel, Long, Boolean, Long?, String) -> Unit,
     onPlayArchive: (Channel, Program, Long, Boolean, Long?, String) -> Unit,
     onNavigate: (String) -> Unit,
@@ -274,6 +275,14 @@ fun LiveEpgScreen(
             anchorTime = initialAnchorTime,
             favoritesOnly = initialFavoritesOnly
         )
+    }
+    var requestedProgrammeHandled by rememberSaveable(initialChannelId, initialAnchorTime) { mutableStateOf(false) }
+    LaunchedEffect(initialChannelId, initialAnchorTime) {
+        if (initialChannelId != null && initialAnchorTime != null && !requestedProgrammeHandled) {
+            val programme = viewModel.loadRequestedProgramme(initialChannelId, initialAnchorTime)
+            requestedProgrammeHandled = true
+            if (selectedProgram == null) selectedProgram = programme
+        }
     }
 
     uiState.recordingMessage?.let { message ->

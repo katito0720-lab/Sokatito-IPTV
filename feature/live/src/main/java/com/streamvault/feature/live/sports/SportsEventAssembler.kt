@@ -83,7 +83,7 @@ internal object SportsEventAssembler {
             ?.let { "|session:$it" }
             .orEmpty()
         val broadcasts = map { candidate ->
-            SportsBroadcast(candidate.channel, candidate.combinedProfileId)
+            SportsBroadcast(candidate.channel, candidate.combinedProfileId, guideProgram = candidate.program)
         }.distinctBy { broadcast ->
             "${broadcast.channel.providerId}:${broadcast.channel.id}"
         }.sortedBy { it.channel.name.lowercase() }

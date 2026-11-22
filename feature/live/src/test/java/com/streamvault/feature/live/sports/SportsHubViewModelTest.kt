@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.data.preferences.PreferencesRepository
+import com.streamvault.domain.manager.ProgramReminderManager
 import com.streamvault.domain.model.ActiveLiveSource
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.ContentType
@@ -62,6 +63,7 @@ class SportsHubViewModelTest {
     private val sources: EpgSourceRepository = mock()
     private val sync: SyncMetadataRepository = mock()
     private val preferences: PreferencesRepository = mock()
+    private val reminders: ProgramReminderManager = mock()
     private var sportsProviderConfigs: List<SportsProviderConfig> = emptyList()
     private val sportsProviderRevision = MutableStateFlow(0L)
     private val sportsProviderStore = object : SportsProviderStore {
@@ -188,7 +190,7 @@ class SportsHubViewModelTest {
         store.clear()
         delay(1_100L)
 
-        val second = SportsHubViewModel(repository)
+        val second = SportsHubViewModel(repository, reminders)
 
         assertThat(second.uiState.value.events).isEmpty()
     }
@@ -497,7 +499,7 @@ class SportsHubViewModelTest {
         repositoryScope,
     )
 
-    private fun createModel(repository: SportsHubRepository = createRepository()) = SportsHubViewModel(repository)
+    private fun createModel(repository: SportsHubRepository = createRepository()) = SportsHubViewModel(repository, reminders)
         .also { model ->
             store.put("sports-${modelCount++}", model)
             model.viewModelScope.launch { model.uiState.collect {} }

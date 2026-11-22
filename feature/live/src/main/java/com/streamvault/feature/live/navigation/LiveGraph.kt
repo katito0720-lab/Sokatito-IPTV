@@ -48,6 +48,7 @@ fun NavGraphBuilder.registerLiveGraph(
             navArgument("categoryId") { type = NavType.LongType; defaultValue = -1L },
             navArgument("anchorTime") { type = NavType.LongType; defaultValue = -1L },
             navArgument("favoritesOnly") { type = NavType.BoolType; defaultValue = false },
+            navArgument("channelId") { type = NavType.LongType; defaultValue = -1L },
         ),
     ) { backStackEntry ->
         val initialCategoryId = backStackEntry.arguments
@@ -63,6 +64,7 @@ fun NavGraphBuilder.registerLiveGraph(
             initialCategoryId,
             initialAnchorTime,
             initialFavoritesOnly,
+            backStackEntry.arguments?.getLong("channelId")?.takeIf { it > 0L },
             onPlaybackRequested,
             onArchivePlaybackRequested,
             onNavigate,

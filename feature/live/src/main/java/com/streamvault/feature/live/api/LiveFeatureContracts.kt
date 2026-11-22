@@ -153,6 +153,7 @@ typealias LiveEpgContent = @Composable (
     initialCategoryId: Long?,
     initialAnchorTime: Long?,
     initialFavoritesOnly: Boolean,
+    initialChannelId: Long?,
     onChannelPlaybackRequested: (LiveChannelPlaybackRequest) -> Unit,
     onArchivePlaybackRequested: (LiveArchivePlaybackRequest) -> Unit,
     onNavigate: (String) -> Unit,

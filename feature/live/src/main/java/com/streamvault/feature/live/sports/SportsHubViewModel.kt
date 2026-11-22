@@ -1,12 +1,17 @@
 package com.streamvault.feature.live.sports
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.streamvault.domain.manager.ProgramReminderManager
+import com.streamvault.domain.model.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
 
 @HiltViewModel
 internal class SportsHubViewModel @Inject constructor(
     private val repository: SportsHubRepository,
+    private val reminders: ProgramReminderManager,
 ) : ViewModel() {
     init {
         repository.refreshPresentationNow()
@@ -28,4 +33,19 @@ internal class SportsHubViewModel @Inject constructor(
     suspend fun forgetChannelForEvent(event: SportsEvent) = repository.forgetChannelForEvent(event)
     suspend fun loadStandings(event: SportsEvent) = repository.loadStandings(event)
     suspend fun loadExtraDetails(event: SportsEvent) = repository.loadExtraDetails(event)
+
+    suspend fun isReminderScheduled(target: SportsReminderTarget): Boolean = with(target) {
+        reminders.isReminderScheduled(providerId, program.channelId, program.title, program.startTime)
+    }
+
+    suspend fun setReminder(target: SportsReminderTarget, enabled: Boolean): Result<Unit> =
+        viewModelScope.async {
+            with(target) {
+                if (enabled) {
+                    reminders.scheduleReminder(providerId, program.channelId, channelName, program, leadTimeMinutes = 0)
+                } else {
+                    reminders.cancelReminder(providerId, program.channelId, program.title, program.startTime)
+                }
+            }
+        }.await()
 }

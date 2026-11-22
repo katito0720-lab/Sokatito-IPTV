@@ -62,6 +62,21 @@ class SportsLiveStatusTest {
         assertThat(guideTile.isLiveAt(emptyList(), now)).isFalse()
     }
 
+    @Test fun preferredChannelOnlyTunesWhileItsOwnProgrammeIsAiring() {
+        val replayEndingAtKickoff = Program(
+            channelId = "1", title = event.title, startTime = now - 2000, endTime = now,
+        )
+        val preferred = broadcast.copy(guideProgram = replayEndingAtKickoff)
+        val live = withStatus(ProviderGameState.LIVE, now - 1000).copy(
+            broadcasts = listOf(preferred),
+            rememberedChannelKey = preferred.channelIdentityKey(),
+        )
+
+        assertThat(live.preferredLiveBroadcast(now - 1)).isEqualTo(preferred)
+        assertThat(live.preferredLiveBroadcast(now)).isNull()
+        assertThat(event.preferredLiveBroadcast(now)).isNull()
+    }
+
     @Test fun aDatedLiveLabelInThePlaylistDoesNotConfirmTheMatch() {
         val label = "LIVE | Atlanta Hawks vs Charlotte Hornets | Fri 20 Nov 18:00 EST (US) | US: NBA PASS PPV 1"
         val listing = parsePlaylistSportsEvent(label)

@@ -1019,6 +1019,31 @@ class EpgViewModel @Inject constructor(
         }
     }
 
+    internal suspend fun loadRequestedProgramme(channelId: Long, startTime: Long): Pair<Channel, Program>? {
+        val channel = loadGuideChannelsByOrderedIds(listOf(channelId)).first().firstOrNull() ?: return null
+        if (channel.isAdult || channel.isUserProtected) return null
+        val activeSource = combinedM3uRepository.getActiveLiveSource().first()
+        val belongsToSource = when (activeSource) {
+            is ActiveLiveSource.ProviderSource -> activeSource.providerId == channel.providerId
+            is ActiveLiveSource.CombinedM3uSource ->
+                combinedM3uRepository.getProfile(activeSource.profileId)?.members.orEmpty()
+                    .any { it.enabled && it.providerId == channel.providerId }
+            null -> providerRepository.getActiveProvider().first()?.id == channel.providerId
+        }
+        if (!belongsToSource) return null
+        val hiddenChannels = preferencesRepository.getHiddenChannelIds(channel.providerId).first()
+        if (channelId in hiddenChannels || channel.id in hiddenChannels ||
+            channel.categoryId in preferencesRepository.getHiddenCategoryIds(channel.providerId, ContentType.LIVE).first()
+        ) return null
+        val category = channelRepository.getCategories(channel.providerId).first()
+            .firstOrNull { it.id == channel.categoryId }
+        if (category?.isAdult == true || category?.isUserProtected == true) return null
+        val lookupKey = channel.guideLookupKey() ?: return null
+        val result = loadGuidePrograms(channel.providerId, listOf(channel), startTime, startTime + 1L)
+        val programme = result.programsByChannel[lookupKey]?.firstOrNull { it.startTime == startTime } ?: return null
+        return channel to programme
+    }
+
     private fun observeGuideBase() {
         viewModelScope.launch {
             combine(

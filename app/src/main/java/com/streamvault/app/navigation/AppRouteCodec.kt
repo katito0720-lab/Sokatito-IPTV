@@ -53,7 +53,8 @@ internal object AppRouteCodec {
             val categoryId = destination.categoryId ?: -1L
             val anchorTime = destination.anchorTimeMs ?: -1L
             "${AppRoutePatterns.EPG}?categoryId=$categoryId" +
-                "&anchorTime=$anchorTime&favoritesOnly=${destination.favoritesOnly}"
+                "&anchorTime=$anchorTime&favoritesOnly=${destination.favoritesOnly}" +
+                (destination.channelId?.let { "&channelId=$it" } ?: "")
         }
         is AppDestination.Settings -> buildList {
             destination.backupUri?.takeIf(String::isNotBlank)?.let { uri ->
@@ -164,7 +165,10 @@ internal object AppRouteCodec {
         }
         val favoritesOnly = query["favoritesOnly"]?.toBooleanStrictOrNull()
             ?: if (query.containsKey("favoritesOnly")) return null else false
-        return AppDestination.Guide(categoryId, anchorTime, favoritesOnly)
+        val channelId = query["channelId"]?.let { raw ->
+            normalizeSentinel(raw.toLongOrNull()?.takeIf { it == -1L || it > 0L } ?: return null)
+        }
+        return AppDestination.Guide(categoryId, anchorTime, favoritesOnly, channelId)
     }
 
     private fun decodeMovieDetail(path: String, query: Map<String, String>): AppDestination? {

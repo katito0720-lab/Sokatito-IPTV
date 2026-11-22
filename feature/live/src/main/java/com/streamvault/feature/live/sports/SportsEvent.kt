@@ -101,6 +101,7 @@ internal data class SportsBroadcast(
     val channel: Channel,
     val combinedProfileId: Long?,
     val fallbackMatch: SportsChannelMatch? = null,
+    val guideProgram: Program? = null,
 )
 
 internal data class SportsEvent(

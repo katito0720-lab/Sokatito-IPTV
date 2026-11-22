@@ -14,7 +14,8 @@ sealed interface AppDestination : Serializable {
     data class Guide(
         val categoryId: Long? = null,
         val anchorTimeMs: Long? = null,
-        val favoritesOnly: Boolean = false
+        val favoritesOnly: Boolean = false,
+        val channelId: Long? = null,
     ) : AppDestination
     data class Settings(
         val backupUri: String? = null,

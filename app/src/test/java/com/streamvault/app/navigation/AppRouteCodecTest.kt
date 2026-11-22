@@ -16,6 +16,8 @@ class AppRouteCodecTest {
             AppDestination.LiveTv(42L) to "live_tv?categoryId=42",
             AppDestination.Guide(21L, 1_700_000_000_000L, true) to
                 "epg?categoryId=21&anchorTime=1700000000000&favoritesOnly=true",
+            AppDestination.Guide(anchorTimeMs = 1_700_000_000_000L, channelId = 84L) to
+                "epg?categoryId=-1&anchorTime=1700000000000&favoritesOnly=false&channelId=84",
             AppDestination.Search("night shift") to "search?query=night%20shift",
             AppDestination.Welcome to SystemRoutePatterns.WELCOME,
             AppDestination.Downloads to SystemRoutePatterns.DOWNLOADS,

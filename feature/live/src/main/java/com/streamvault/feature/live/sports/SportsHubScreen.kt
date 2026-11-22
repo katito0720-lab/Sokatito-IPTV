@@ -7,6 +7,8 @@ import com.streamvault.core.ui.layout.AdaptiveRow
 import com.streamvault.core.ui.layout.isPortraitLayout
 
 import android.text.format.DateUtils
+import java.time.Instant
+import java.time.ZoneId
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -102,6 +104,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.DateRange
+import com.streamvault.core.navigation.AppDestination
+import com.streamvault.core.ui.platform.rememberNotificationPermissionGate
 import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.launch
 
@@ -110,10 +115,17 @@ private data class SportsLeagueFilterOption(val id: String, val label: String, v
 @Composable
 fun SportsHubScreen(
     onPlaybackRequested: (LiveChannelPlaybackRequest) -> Unit,
+    onOpenGuide: (AppDestination.Guide) -> Unit,
     scaffold: LiveHomeScaffoldContent,
 ) {
     val viewModel: SportsHubViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val permissionGate = rememberNotificationPermissionGate(
+        onNotificationsBlocked = { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show() },
+        reminderBlockedMessage = stringResource(R.string.notification_permission_reminder_required),
+        recordingBlockedMessage = stringResource(R.string.notification_permission_recording_alert_required),
+    )
     scaffold(LiveRoutePatterns.SPORTS, stringResource(R.string.nav_sports), null) {
         SportsHubContent(
             state = state,
@@ -130,6 +142,10 @@ fun SportsHubScreen(
             onForgetChannelForEvent = viewModel::forgetChannelForEvent,
             onLoadStandings = viewModel::loadStandings,
             onLoadExtraDetails = viewModel::loadExtraDetails,
+            onOpenGuide = onOpenGuide,
+            reminderContent = { target ->
+                SportsReminderButton(target, permissionGate, viewModel::isReminderScheduled, viewModel::setReminder)
+            },
             onPlayBroadcast = { broadcast ->
                 onPlaybackRequested(
                     LiveChannelPlaybackRequest(
@@ -165,10 +181,17 @@ internal fun SportsHubContent(
     onLoadStandings: suspend (SportsEvent) -> LoadedSportsStandings?,
     onLoadExtraDetails: suspend (SportsEvent) -> LoadedSportsEventExtraDetails?,
     onPlayBroadcast: (SportsBroadcast) -> Unit,
+    onOpenGuide: (AppDestination.Guide) -> Unit = {},
+    reminderContent: @Composable (SportsReminderTarget) -> Unit = {},
 ) {
     var detailsEvent by remember { mutableStateOf<SportsEvent?>(null) }
     var manualPickerEvent by remember { mutableStateOf<SportsEvent?>(null) }
+    val context = LocalContext.current
     val actionScope = rememberCoroutineScope()
+    val chooseBroadcast: (SportsEvent, SportsBroadcast) -> Unit = { event, broadcast ->
+        val guide = event.guideDestinationFor(broadcast, System.currentTimeMillis())
+        if (guide != null) onOpenGuide(guide) else onPlayBroadcast(broadcast)
+    }
     var inclusionsOpen by remember { mutableStateOf(false) }
     val searchTerms = remember(state.searchQuery) { sportsSearchTerms(state.searchQuery) }
     val visibleEvents = remember(state.events, state.selectedSportFilter, state.selectedLeagueFilter,
@@ -274,26 +297,43 @@ internal fun SportsHubContent(
                 }.sortedWith(compareBy<Triple<String, String, List<SportsEvent>>> {
                     it.third.none { event -> event.leagueInfo != null || event.league != null }
                 }.thenByDescending { it.third.size })
-                val leadEvents = leagueGroups.first().third
-                val featured = leadEvents.firstOrNull { it.competitors.size == 2 } ?: leadEvents.first()
+                val upcoming = state.selectedTimeRange == SportsTimeRange.UPCOMING
+                val zone = ZoneId.systemDefault()
+                val sections = if (upcoming) {
+                    val dateFormat = DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_WEEKDAY
+                    visibleEvents.groupBy { event -> Instant.ofEpochMilli(event.startTime).atZone(zone).toLocalDate() }
+                        .toSortedMap().map { (date, events) ->
+                            val dayStart = date.atStartOfDay(zone).toInstant().toEpochMilli()
+                            Triple("day:$date", DateUtils.formatDateTime(context, dayStart, dateFormat),
+                                events.sortedBy { it.startTime })
+                        }
+                } else leagueGroups.map { (key, title, events) -> Triple("league:$key", title, events) }
+                val leadEvents = sections.first().third
+                val featured = if (upcoming) leadEvents.first()
+                    else leadEvents.firstOrNull { it.competitors.size == 2 } ?: leadEvents.first()
                 item(key = "sports-featured", span = fullRow) {
                     FeaturedSportsEvent(
                         event = featured,
                         isLive = featured.isLiveAt(state.nowMillis),
                         showDate = state.selectedTimeRange == SportsTimeRange.UPCOMING,
                         onShowDetails = { detailsEvent = it },
-                        onPlayBroadcast = onPlayBroadcast,
+                        nowMillis = state.nowMillis,
+                        onChooseBroadcast = { broadcast -> chooseBroadcast(featured, broadcast) },
                     )
                 }
-                leagueGroups.forEach { (leagueKey, league, events) ->
-                    item(key = "league:$leagueKey", span = fullRow) {
-                        Text(league, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
+                sections.forEach { (key, title, events) ->
+                    item(key = key, span = fullRow) {
+                        Text(title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = BrowseColors.TextPrimary)
                     }
                     gridItems(events, key = { "event:${it.id}" }) { event ->
                         SportsEventCard(
                             event = event, isLive = event.isLiveAt(state.nowMillis),
                             showDate = state.selectedTimeRange == SportsTimeRange.UPCOMING,
                             attributionLines = event.attributionCredits.sumOf { it.lineCount },
+                            onActivate = {
+                                val preferred = event.preferredLiveBroadcast(System.currentTimeMillis())
+                                if (preferred == null) detailsEvent = event else onPlayBroadcast(preferred)
+                            },
                             onShowDetails = { detailsEvent = it },
                         )
                     }
@@ -333,6 +373,7 @@ internal fun SportsHubContent(
             nowMillis = state.nowMillis,
             onLoadStandings = onLoadStandings,
             onLoadExtraDetails = onLoadExtraDetails,
+            reminderContent = reminderContent,
             onDismiss = { detailsEvent = null },
             onFindAnotherChannel = {
                 detailsEvent = null
@@ -344,9 +385,9 @@ internal fun SportsHubContent(
                     detailsEvent = null
                 }
             },
-            onPlayBroadcast = { broadcast ->
+            onChooseBroadcast = { broadcast ->
                 detailsEvent = null
-                onPlayBroadcast(broadcast)
+                chooseBroadcast(event, broadcast)
             },
         )
     }
@@ -359,7 +400,7 @@ internal fun SportsHubContent(
                 actionScope.launch {
                     if (onRememberChannelForEvent(event, broadcast)) {
                         manualPickerEvent = null
-                        onPlayBroadcast(broadcast)
+                        chooseBroadcast(event, broadcast)
                     }
                 }
             },
@@ -483,7 +524,8 @@ private fun FeaturedSportsEvent(
     isLive: Boolean,
     showDate: Boolean,
     onShowDetails: (SportsEvent) -> Unit,
-    onPlayBroadcast: (SportsBroadcast) -> Unit,
+    nowMillis: Long,
+    onChooseBroadcast: (SportsBroadcast) -> Unit,
 ) {
     if (isPortraitLayout()) {
         Column(
@@ -499,7 +541,12 @@ private fun FeaturedSportsEvent(
                 fontSize = 12.sp, color = BrowseColors.TextSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 event.broadcastsForPresentation().firstOrNull()?.let { broadcast ->
-                    SportsChannelButton(channel = broadcast.channel, compact = true, onClick = { onPlayBroadcast(broadcast) })
+                    SportsChannelButton(
+                        channel = broadcast.channel,
+                        compact = true,
+                        opensGuide = event.guideDestinationFor(broadcast, nowMillis) != null,
+                        onClick = { onChooseBroadcast(broadcast) },
+                    )
                 }
                 TvButton(onClick = { onShowDetails(event) }) {
                     Text(stringResource(R.string.epg_program_details_show), fontSize = 12.sp)
@@ -532,7 +579,8 @@ private fun FeaturedSportsEvent(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 event.broadcastsForPresentation().firstOrNull()?.let { broadcast ->
                     SportsChannelButton(channel = broadcast.channel, compact = true,
-                        modifier = Modifier.weight(1f), onClick = { onPlayBroadcast(broadcast) })
+                        modifier = Modifier.weight(1f), opensGuide = event.guideDestinationFor(broadcast, nowMillis) != null,
+                        onClick = { onChooseBroadcast(broadcast) })
                 }
                 TvButton(onClick = { onShowDetails(event) }, modifier = Modifier.height(36.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
@@ -700,10 +748,12 @@ private fun SportsEventCard(
     isLive: Boolean,
     showDate: Boolean,
     attributionLines: Int,
+    onActivate: () -> Unit,
     onShowDetails: (SportsEvent) -> Unit,
 ) {
     TvClickableSurface(
-        onClick = { onShowDetails(event) },
+        onClick = onActivate,
+        onLongClick = { onShowDetails(event) },
         modifier = Modifier.fillMaxWidth().height(172.dp + 18.dp * attributionLines),
         border = sportsCardBorder(RoundedCornerShape(10.dp)),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
@@ -730,9 +780,11 @@ private fun SportsChannelButton(
     channel: Channel,
     compact: Boolean = false,
     modifier: Modifier = Modifier,
+    opensGuide: Boolean = false,
     onClick: () -> Unit,
 ) {
-    val accessibilityLabel = stringResource(
+    val channelLabel = if (opensGuide) "${stringResource(R.string.nav_epg)} · ${channel.name}" else channel.name
+    val accessibilityLabel = if (opensGuide) channelLabel else stringResource(
         R.string.live_sports_play_channel_content_description,
         channel.name,
     )
@@ -742,7 +794,8 @@ private fun SportsChannelButton(
             .height(if (compact) 36.dp else 60.dp)
             .semantics { contentDescription = accessibilityLabel },
     ) {
-        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
+        Icon(if (opensGuide) Icons.Default.DateRange else Icons.Default.PlayArrow,
+            contentDescription = null, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
         Spacer(Modifier.width(6.dp))
         ChannelLogoBadge(
             channelName = channel.name,
@@ -751,7 +804,7 @@ private fun SportsChannelButton(
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = channel.name,
+            text = channelLabel,
             fontSize = if (compact) 11.sp else 14.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -766,7 +819,8 @@ private fun SportsEventDetailsDialog(
     onDismiss: () -> Unit,
     onFindAnotherChannel: () -> Unit,
     onForgetChoice: () -> Unit,
-    onPlayBroadcast: (SportsBroadcast) -> Unit,
+    onChooseBroadcast: (SportsBroadcast) -> Unit,
+    reminderContent: @Composable (SportsReminderTarget) -> Unit,
     onLoadStandings: suspend (SportsEvent) -> LoadedSportsStandings?,
     onLoadExtraDetails: suspend (SportsEvent) -> LoadedSportsEventExtraDetails?,
 ) {
@@ -807,10 +861,21 @@ private fun SportsEventDetailsDialog(
                         }
                     }
                     displayBroadcasts.forEachIndexed { index, broadcast ->
-                        SportsChannelButton(channel = broadcast.channel, compact = true,
-                            modifier = Modifier.fillMaxWidth().then(
-                                if (index == 0) Modifier.focusRequester(firstChannelFocusRequester) else Modifier),
-                            onClick = { onPlayBroadcast(broadcast) })
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            SportsChannelButton(
+                                channel = broadcast.channel,
+                                compact = true,
+                                modifier = Modifier.weight(1f).then(
+                                    if (index == 0) Modifier.focusRequester(firstChannelFocusRequester) else Modifier),
+                                opensGuide = event.guideDestinationFor(broadcast, nowMillis) != null,
+                                onClick = { onChooseBroadcast(broadcast) },
+                            )
+                            broadcast.reminderTarget(nowMillis)?.let { reminderContent(it) }
+                        }
                     }
                     Spacer(Modifier.height(2.dp))
                     Text(sportsDescriptionForPresentation(event.description).ifBlank { stringResource(R.string.epg_hero_no_program_description) },

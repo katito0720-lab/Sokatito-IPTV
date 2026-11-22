@@ -28,6 +28,7 @@ internal fun NavGraphBuilder.registerLiveGraph(
         sportsContent = { onPlaybackRequested ->
             SportsHubScreen(
                 onPlaybackRequested = onPlaybackRequested,
+                onOpenGuide = { destination -> actions.navigate(destination) },
                 scaffold = { route, title, subtitle, content ->
                     AppScreenScaffold(
                         currentRoute = route,
@@ -104,6 +105,7 @@ internal fun NavGraphBuilder.registerLiveGraph(
             initialCategoryId,
             initialAnchorTime,
             initialFavoritesOnly,
+            initialChannelId,
             onChannelPlaybackRequested,
             onArchivePlaybackRequested,
             onNavigate,
@@ -113,6 +115,7 @@ internal fun NavGraphBuilder.registerLiveGraph(
                 initialCategoryId = initialCategoryId,
                 initialAnchorTime = initialAnchorTime,
                 initialFavoritesOnly = initialFavoritesOnly,
+                initialChannelId = initialChannelId,
                 onPlayChannel = { channel, categoryId, isVirtual, combinedProfileId, returnRoute ->
                     onChannelPlaybackRequested(
                         LiveChannelPlaybackRequest(
