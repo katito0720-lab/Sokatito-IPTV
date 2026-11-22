@@ -2,26 +2,23 @@ package com.streamvault.feature.catalog.presentation.dashboard
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.res.painterResource
 
 import com.streamvault.core.ui.design.BrowseShapes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.height
@@ -44,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,7 +53,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
-import coil3.compose.AsyncImage
 import com.streamvault.feature.catalog.R
 import com.streamvault.core.ui.device.rememberIsTelevisionDevice
 import com.streamvault.core.ui.image.ChannelLogoBadge
@@ -66,7 +61,6 @@ import com.streamvault.feature.catalog.presentation.components.CategoryRow
 import com.streamvault.feature.catalog.presentation.components.ChannelCard
 import com.streamvault.feature.catalog.presentation.components.ContinueWatchingRow
 import com.streamvault.feature.catalog.presentation.components.MovieCard
-import com.streamvault.core.ui.image.rememberCrossfadeImageModel
 import com.streamvault.feature.catalog.presentation.components.SeriesCard
 import com.streamvault.core.ui.design.BrowseColors as AppColors
 import com.streamvault.feature.catalog.presentation.time.LocalCatalogTimeFormat
@@ -106,6 +100,7 @@ fun DashboardScreen(
     onRecentChannelClick: (Channel, Long?) -> Unit,
     onFavoriteChannelClick: (Channel, Long?) -> Unit,
     onMovieClick: (Movie) -> Unit,
+    onPlayMovie: (Movie) -> Unit,
     onSeriesClick: (Series) -> Unit,
     onPlaybackHistoryClick: (PlaybackHistory) -> Unit,
     scaffold: CatalogScaffoldContent,
@@ -119,6 +114,8 @@ fun DashboardScreen(
     val provider = uiState.provider
     val snackbarHostState = remember { SnackbarHostState() }
     var showHomeCustomizationDialog by rememberSaveable { mutableStateOf(false) }
+    val isTv = rememberIsTelevisionDevice()
+    val background = if (AppColors.current.isLight) AppColors.Canvas else DashboardCanvas
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
@@ -132,19 +129,19 @@ fun DashboardScreen(
             AppDestination.Home,
             stringResource(R.string.nav_home),
             provider?.name,
-            CatalogNavigationChrome.TopBar,
+            if (isTv) CatalogNavigationChrome.CompactRail else CatalogNavigationChrome.TopBar,
             true,
             true,
             false
         ) {
             if (provider == null) {
                 if (uiState.isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxSize().background(background), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = Primary)
                     }
                 } else {
                     Column(
-                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                        modifier = Modifier.fillMaxSize().background(background).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.Center
                     ) {
                         DashboardSpotlight(
@@ -182,25 +179,37 @@ fun DashboardScreen(
             }
 
             androidx.compose.foundation.lazy.LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().background(background),
                 contentPadding = PaddingValues(bottom = 28.dp)
             ) {
                 item(key = "spotlight") {
                     val feature = uiState.feature
                     val history = uiState.continueWatching.firstOrNull()
                     val resume = feature.actionType == DashboardFeatureAction.CONTINUE_WATCHING
+                    val movie = uiState.recentMovies.firstOrNull().takeIf { feature.actionType == DashboardFeatureAction.MOVIES }
+                    val canPlayMovie = movie != null && movie.streamUrl.isNotBlank() && !movie.isUserProtected && !movie.isAdult
                     DashboardSpotlight(
                         brandArtwork = brandArtwork,
                         artworkUrl = feature.artworkUrl,
                         channelLogo = feature.actionType == DashboardFeatureAction.LIVE,
                         title = feature.title,
                         summary = feature.summary,
+                        metadata = feature.metadata,
                         progress = history?.takeIf { resume && it.totalDurationMs > 0 }?.let {
                             (it.resumePositionMs.toDouble() / it.totalDurationMs).toFloat().coerceIn(0f, 1f)
                         },
                         actions = {
+                            if (canPlayMovie && movie != null) {
+                                DashboardSpotlightButton(stringResource(R.string.movie_detail_play), Icons.Default.PlayArrow, primary = true) {
+                                    onPlayMovie(movie)
+                                }
+                            }
                             if (feature.actionLabel.isNotBlank() && (!resume || history != null)) {
-                                TvButton(onClick = {
+                                DashboardSpotlightButton(
+                                    label = feature.actionLabel,
+                                    icon = if (resume || feature.actionType == DashboardFeatureAction.LIVE) Icons.Default.PlayArrow else Icons.Default.Info,
+                                    primary = !canPlayMovie,
+                                ) {
                                     when (feature.actionType) {
                                         DashboardFeatureAction.CONTINUE_WATCHING -> history?.let(onPlaybackHistoryClick)
                                         DashboardFeatureAction.LIVE -> {
@@ -211,10 +220,10 @@ fun DashboardScreen(
                                         DashboardFeatureAction.MOVIES -> uiState.recentMovies.firstOrNull()?.let(onMovieClick)
                                         DashboardFeatureAction.SERIES -> uiState.recentSeries.firstOrNull()?.let(onSeriesClick)
                                     }
-                                }) { Text(feature.actionLabel) }
+                                }
                             }
-                            TvButton(onClick = { showHomeCustomizationDialog = true }) {
-                                Text(stringResource(customizeLabel))
+                            DashboardSpotlightButton(stringResource(customizeLabel), Icons.Default.Tune) {
+                                showHomeCustomizationDialog = true
                             }
                         }
                     )
@@ -307,7 +316,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Movies) }
                     ) { movie ->
-                        MovieCard(
+                        DashboardMoviePoster(
                             movie = movie,
                             onClick = { onMovieClick(movie) }
                         )
@@ -319,7 +328,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Series) }
                     ) { series ->
-                        SeriesCard(
+                        DashboardSeriesPoster(
                             series = series,
                             subtitle = series.releaseDate ?: stringResource(R.string.dashboard_updated_series_badge),
                             onClick = { onSeriesClick(series) }
@@ -332,7 +341,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Movies) }
                     ) { movie ->
-                        MovieCard(movie = movie, onClick = { onMovieClick(movie) })
+                        DashboardMoviePoster(movie = movie, onClick = { onMovieClick(movie) })
                     }
 
                     AppHomeDashboardShelf.FAVORITE_SERIES -> CategoryRow(
@@ -341,7 +350,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Series) }
                     ) { series ->
-                        SeriesCard(
+                        DashboardSeriesPoster(
                             series = series,
                             subtitle = series.releaseDate ?: stringResource(R.string.dashboard_updated_series_badge),
                             onClick = { onSeriesClick(series) }
@@ -354,7 +363,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Movies) }
                     ) { movie ->
-                        MovieCard(movie = movie, onClick = { onMovieClick(movie) })
+                        DashboardMoviePoster(movie = movie, onClick = { onMovieClick(movie) })
                     }
 
                     AppHomeDashboardShelf.TRAKT_WATCHLIST_SERIES -> CategoryRow(
@@ -363,7 +372,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Series) }
                     ) { series ->
-                        SeriesCard(
+                        DashboardSeriesPoster(
                             series = series,
                             subtitle = series.releaseDate ?: stringResource(R.string.dashboard_updated_series_badge),
                             onClick = { onSeriesClick(series) }
@@ -388,7 +397,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Movies) }
                     ) { movie ->
-                        MovieCard(movie = movie, onClick = { onMovieClick(movie) })
+                        DashboardMoviePoster(movie = movie, onClick = { onMovieClick(movie) })
                     }
 
                     AppHomeDashboardShelf.RECOMMENDED_MOVIES -> CategoryRow(
@@ -397,7 +406,7 @@ fun DashboardScreen(
                         keySelector = { it.id },
                         onSeeAll = { onDestinationRequested(AppDestination.Movies) }
                     ) { movie ->
-                        MovieCard(movie = movie, onClick = { onMovieClick(movie) })
+                        DashboardMoviePoster(movie = movie, onClick = { onMovieClick(movie) })
                     }
                 }
             }
@@ -425,69 +434,25 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardSpotlight(
-    @DrawableRes brandArtwork: Int,
-    title: String,
-    summary: String,
-    artworkUrl: String? = null,
-    channelLogo: Boolean = false,
-    progress: Float? = null,
-    actions: @Composable () -> Unit
+private fun DashboardMoviePoster(
+    movie: Movie,
+    isLocked: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
 ) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 10.dp)
-            .clip(BrowseShapes.Hero)
-            .background(Brush.linearGradient(listOf(AppColors.Surface, AppColors.SurfaceEmphasis)))
-    ) {
-        val wide = maxWidth >= 560.dp
-        if (wide) {
-            Box(Modifier.matchParentSize(), contentAlignment = Alignment.CenterEnd) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(0.36f).fillMaxHeight(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (artworkUrl.isNullOrBlank()) {
-                        Image(
-                            painter = painterResource(brandArtwork),
-                            contentDescription = null,
-                            modifier = Modifier.size(102.dp)
-                        )
-                    } else {
-                        AsyncImage(
-                            model = rememberCrossfadeImageModel(artworkUrl),
-                            contentDescription = null,
-                            contentScale = if (channelLogo) ContentScale.Fit else ContentScale.Crop,
-                            modifier = if (channelLogo) Modifier.size(108.dp) else Modifier.fillMaxSize()
-                        )
-                    }
-                }
-            }
-        }
-        Column(
-            modifier = Modifier.fillMaxWidth(if (wide) 0.64f else 1f)
-                .heightIn(min = if (wide) 154.dp else 0.dp)
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)
-        ) {
-            Text(title, style = MaterialTheme.typography.headlineSmall, color = TextPrimary,
-                maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(summary, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-            if (progress != null) {
-                LinearProgressIndicator(
-                    progress = { progress },
-                    color = Primary,
-                    trackColor = AppColors.Outline,
-                    modifier = Modifier.width(144.dp)
-                )
-            }
-            FlowRow(
-                modifier = Modifier.padding(top = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) { actions() }
-        }
-    }
+    MovieCard(movie = movie, onClick = onClick, isLocked = isLocked, onLongClick = onLongClick, width = 116.dp, height = 174.dp)
+}
+
+@Composable
+private fun DashboardSeriesPoster(
+    series: Series,
+    subtitle: String? = null,
+    isLocked: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
+    SeriesCard(series = series, subtitle = subtitle, onClick = onClick, isLocked = isLocked,
+        onLongClick = onLongClick, width = 116.dp, height = 174.dp)
 }
 
 private fun Series.rawSeriesIdsForNavigation(): List<Long> =
@@ -870,7 +835,7 @@ private fun PinnedCategoriesSection(
                     items = movies,
                     keySelector = { it.id }
                 ) { movie ->
-                    MovieCard(
+                    DashboardMoviePoster(
                         movie = movie,
                         isLocked = false,
                         onClick = { onMovieClick(movie) },
@@ -886,7 +851,7 @@ private fun PinnedCategoriesSection(
                     items = seriesList,
                     keySelector = { it.id }
                 ) { series ->
-                    SeriesCard(
+                    DashboardSeriesPoster(
                         series = series,
                         isLocked = false,
                         onClick = { onSeriesClick(series) },

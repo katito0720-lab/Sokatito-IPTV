@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -44,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -54,6 +58,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -80,12 +85,14 @@ import com.streamvault.core.ui.design.BrowseFocusSpec as FocusSpec
 import com.streamvault.core.ui.design.LocalAppShapes
 import com.streamvault.core.ui.design.LocalAppSpacing
 import com.streamvault.core.ui.interaction.TvIconButton
+import com.streamvault.core.ui.interaction.TvClickableSurface
 import com.streamvault.core.ui.interaction.mouseClickable
 import com.streamvault.core.ui.interaction.rememberTvInteractionSounds
 import com.streamvault.core.ui.layout.isPortraitLayout
 
 enum class NavigationChrome {
     Rail,
+    CompactRail,
     TopBar
 }
 
@@ -133,6 +140,15 @@ fun CoreAppScreenScaffold(
                     Column(Modifier.weight(1f).fillMaxWidth().padding(contentPadding), content = content)
                 }
                 PortraitNavigation(currentDestinationId, destinations, onDestinationSelected, topBarActions)
+            }
+        } else if (navigationChrome == NavigationChrome.CompactRail) {
+            Row(Modifier.fillMaxSize()) {
+                CompactDestinationRail(currentDestinationId, destinations, onDestinationSelected, topBarActions)
+                Column(Modifier.weight(1f).fillMaxHeight().padding(contentPadding)) {
+                    if (showScreenHeader) AppScreenHeader(title, subtitle, compact = compactHeader)
+                    header?.invoke(this)
+                    content()
+                }
             }
         } else if (navigationChrome == NavigationChrome.Rail) {
             Row(modifier = Modifier.fillMaxSize()) {
@@ -656,6 +672,61 @@ fun ContentMetadataStrip(
                 )
             }
         }
+    }
+}
+
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+@Composable
+private fun CompactDestinationRail(
+    currentDestinationId: String,
+    destinations: List<UiDestination>,
+    onDestinationSelected: (String) -> Unit,
+    actions: (@Composable RowScope.() -> Unit)?,
+) {
+    val shape = RoundedCornerShape(11.dp)
+    val accent = Color(0xFFF3BF74)
+    val active = findActiveDestination(destinations, currentDestinationId)?.id
+    Column(
+        modifier = Modifier.fillMaxHeight().width(63.dp).background(Color(0xFF17131B))
+            .padding(horizontal = 8.dp, vertical = 12.dp).focusRestorer().focusGroup(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            items(destinations, key = { it.id }) { destination ->
+                val isSelected = destination.id == active
+                TvClickableSurface(
+                    onClick = { if (!isSelected) onDestinationSelected(destination.id) },
+                    modifier = Modifier.fillMaxWidth().height(42.dp).semantics {
+                        contentDescription = destination.label
+                        selected = isSelected
+                    },
+                    shape = ClickableSurfaceDefaults.shape(shape),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = if (isSelected) Color(0xFF382B32) else Color.Transparent,
+                        focusedContainerColor = Color(0xFF46343B),
+                    ),
+                    border = ClickableSurfaceDefaults.border(
+                        focusedBorder = Border(BorderStroke(2.dp, accent), shape = shape),
+                    ),
+                ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(destination.icon, contentDescription = null,
+                            tint = if (isSelected) accent else Color(0xFFDDD4DF), modifier = Modifier.size(22.dp))
+                        if (isSelected) {
+                            Spacer(Modifier.align(Alignment.CenterStart).padding(start = 3.dp)
+                                .size(3.dp, 16.dp).background(accent, RoundedCornerShape(2.dp)))
+                        }
+                    }
+                }
+            }
+        }
+        if (actions != null) Row(content = actions)
     }
 }
 

@@ -7,6 +7,7 @@ import com.streamvault.domain.model.AppHomeDashboardShelf
 
 enum class CatalogNavigationChrome {
     Rail,
+    CompactRail,
     TopBar,
 }
 

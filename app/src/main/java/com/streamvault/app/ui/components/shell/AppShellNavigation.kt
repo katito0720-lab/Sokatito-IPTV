@@ -32,6 +32,7 @@ import com.streamvault.domain.model.CatalogLayout
 
 enum class AppNavigationChrome {
     Rail,
+    CompactRail,
     TopBar
 }
 
@@ -72,6 +73,7 @@ fun AppScreenScaffold(
         modifier = modifier,
         navigationChrome = when (navigationChrome) {
             AppNavigationChrome.Rail -> NavigationChrome.Rail
+            AppNavigationChrome.CompactRail -> NavigationChrome.CompactRail
             AppNavigationChrome.TopBar -> NavigationChrome.TopBar
         },
         topBarVisible = topBarVisible,

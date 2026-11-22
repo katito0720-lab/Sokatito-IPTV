@@ -6,15 +6,15 @@ import org.junit.Test
 class AppHomeDashboardShelfTest {
 
     @Test
-    fun `defaultOrder matches the existing home layout`() {
+    fun `defaultOrder puts viewing history and recently added titles first`() {
         assertThat(AppHomeDashboardShelf.defaultOrder).containsExactly(
+            AppHomeDashboardShelf.CONTINUE_WATCHING,
+            AppHomeDashboardShelf.RECENT_MOVIES,
+            AppHomeDashboardShelf.RECENT_SERIES,
             AppHomeDashboardShelf.FAVORITE_CHANNELS,
             AppHomeDashboardShelf.RECENT_CHANNELS,
             AppHomeDashboardShelf.LIVE_SHORTCUTS,
-            AppHomeDashboardShelf.CONTINUE_WATCHING,
-            AppHomeDashboardShelf.PINNED_CATEGORIES,
-            AppHomeDashboardShelf.RECENT_MOVIES,
-            AppHomeDashboardShelf.RECENT_SERIES
+            AppHomeDashboardShelf.PINNED_CATEGORIES
         ).inOrder()
     }
 

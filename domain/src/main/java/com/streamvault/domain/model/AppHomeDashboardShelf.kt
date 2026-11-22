@@ -22,13 +22,13 @@ enum class AppHomeDashboardShelf(
 
     companion object {
         val catalogOrder: List<AppHomeDashboardShelf> = listOf(
+            CONTINUE_WATCHING,
+            RECENT_MOVIES,
+            RECENT_SERIES,
             FAVORITE_CHANNELS,
             RECENT_CHANNELS,
             LIVE_SHORTCUTS,
-            CONTINUE_WATCHING,
             PINNED_CATEGORIES,
-            RECENT_MOVIES,
-            RECENT_SERIES,
             FAVORITE_MOVIES,
             FAVORITE_SERIES,
             TRAKT_WATCHLIST_MOVIES,

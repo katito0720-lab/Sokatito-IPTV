@@ -1,5 +1,6 @@
 package com.streamvault.feature.catalog.presentation.dashboard
 
+import com.streamvault.feature.catalog.presentation.components.formatVodRatingLabel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.streamvault.domain.playback.orderedByRequestedRawIds
@@ -805,21 +806,13 @@ class DashboardViewModel @Inject constructor(
             )
         }
 
-        recentChannels.firstOrNull()?.let { channel ->
-            return DashboardFeature(
-                title = channel.name,
-                summary = appContext.getString(R.string.dashboard_jump_back_live),
-                artworkUrl = channel.logoUrl,
-                actionLabel = appContext.getString(R.string.dashboard_watch_live),
-                actionType = DashboardFeatureAction.LIVE
-            )
-        }
-
         recentMovies.firstOrNull()?.let { movie ->
             return DashboardFeature(
                 title = movie.name,
-                summary = movie.year ?: appContext.getString(R.string.dashboard_fresh_movie_pick),
+                summary = movie.plot.orEmpty(),
                 artworkUrl = movie.backdropUrl ?: movie.posterUrl,
+                metadata = listOfNotNull(movie.year, movie.genre, movie.rating.takeIf { it > 0f }?.let(::formatVodRatingLabel))
+                    .filter(String::isNotBlank),
                 actionLabel = appContext.getString(R.string.dashboard_feature_details),
                 actionType = DashboardFeatureAction.MOVIES
             )
@@ -828,10 +821,22 @@ class DashboardViewModel @Inject constructor(
         recentSeries.firstOrNull()?.let { series ->
             return DashboardFeature(
                 title = series.name,
-                summary = appContext.getString(R.string.dashboard_updated_series),
+                summary = series.plot.orEmpty(),
                 artworkUrl = series.backdropUrl ?: series.posterUrl,
+                metadata = listOfNotNull(series.genre, series.rating.takeIf { it > 0f }?.let(::formatVodRatingLabel))
+                    .filter(String::isNotBlank),
                 actionLabel = appContext.getString(R.string.dashboard_feature_details),
                 actionType = DashboardFeatureAction.SERIES
+            )
+        }
+
+        recentChannels.firstOrNull()?.let { channel ->
+            return DashboardFeature(
+                title = channel.name,
+                summary = appContext.getString(R.string.dashboard_jump_back_live),
+                artworkUrl = channel.logoUrl,
+                actionLabel = appContext.getString(R.string.dashboard_watch_live),
+                actionType = DashboardFeatureAction.LIVE
             )
         }
 
@@ -1033,6 +1038,7 @@ data class DashboardFeature(
     val title: String = "",
     val summary: String = "",
     val artworkUrl: String? = null,
+    val metadata: List<String> = emptyList(),
     val actionLabel: String = "",
     val actionType: DashboardFeatureAction = DashboardFeatureAction.LIVE
 )
