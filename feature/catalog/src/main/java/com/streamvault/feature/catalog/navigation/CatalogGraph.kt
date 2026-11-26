@@ -78,7 +78,6 @@ fun NavGraphBuilder.registerCatalogGraph(
                 )
             },
             onMovieClick = { movie -> onOpenMovieDetail(movie, AppDestination.Home) },
-            onPlayMovie = { movie -> onPlayMovie(movie, AppDestination.Home) },
             onSeriesClick = { series -> onOpenSeriesDetail(series, AppDestination.Home) },
             onPlaybackHistoryClick = { history -> onPlayHistory(history, AppDestination.Home) },
             scaffold = scaffold,
