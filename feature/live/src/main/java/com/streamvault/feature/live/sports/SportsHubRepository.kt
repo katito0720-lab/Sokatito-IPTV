@@ -55,6 +55,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.update
@@ -148,6 +150,19 @@ internal class SportsHubRepository @Inject constructor(
             }
         }
 
+        val profileRevisions = combinedM3uRepository.getProfiles().map { profiles ->
+            profiles.map { profile ->
+                CombinedProfileRevision(
+                    profileId = profile.id,
+                    enabled = profile.enabled,
+                    members = profile.members.map { member ->
+                        CombinedProfileMemberRevision(member.providerId, member.enabled, member.priority)
+                    }.sortedWith(compareBy(CombinedProfileMemberRevision::priority)
+                        .thenBy(CombinedProfileMemberRevision::providerId)),
+                )
+            }.sortedBy(CombinedProfileRevision::profileId)
+        }.distinctUntilChanged().shareIn(scope, SharingStarted.Eagerly, replay = 1)
+
         val guideRevision = combine(
             observeProviderRevisions(),
             epgSourceRepository.getAllSources().map { sources ->
@@ -155,35 +170,24 @@ internal class SportsHubRepository @Inject constructor(
                     ExternalGuideRevision(source.id, source.lastSuccessAt, source.updatedAt)
                 }.sortedBy(ExternalGuideRevision::sourceId)
             },
-            combinedM3uRepository.getProfiles().map { profiles ->
-                profiles.map { profile ->
-                    CombinedProfileRevision(
-                        profileId = profile.id,
-                        enabled = profile.enabled,
-                        members = profile.members.map { member ->
-                            CombinedProfileMemberRevision(
-                                providerId = member.providerId,
-                                enabled = member.enabled,
-                                priority = member.priority,
-                            )
-                        }.sortedWith(
-                            compareBy(CombinedProfileMemberRevision::priority)
-                                .thenBy(CombinedProfileMemberRevision::providerId),
-                        ),
-                    )
-                }.sortedBy(CombinedProfileRevision::profileId)
-            },
+            profileRevisions,
         ) { providers, sources, profiles -> SportsGuideRevision(providers, sources, profiles) }
+            // Revisions invalidate the schedule cache. A first guide read can start without them.
+            .onStart { emit(SportsGuideRevision(emptyList(), emptyList(), emptyList())) }
             .distinctUntilChanged()
-            .shareIn(scope, SharingStarted.Eagerly, replay = 1)
 
         // Keep the channel flow subscribed while this ViewModel is alive. A clock tick or
         // time-range change must not re-query and re-present the entire provider catalog.
-        val channelSnapshots = combine(
-            activeSource,
-            guideRevision.map { it.combinedProfiles }.distinctUntilChanged(),
-        ) { source, profiles -> source to profiles }.flatMapLatest { (source, _) ->
-            val sources = resolveProviderSources(source)
+        val channelSnapshots = activeSource.flatMapLatest { source ->
+            when (source) {
+                is ActiveLiveSource.ProviderSource -> flowOf(listOf(source.providerId to null))
+                is ActiveLiveSource.CombinedM3uSource -> profileRevisions.map { profiles ->
+                    profiles.firstOrNull { it.profileId == source.profileId }?.members.orEmpty()
+                        .filter { it.enabled }.map { it.providerId to source.profileId }.distinct()
+                }
+                null -> flowOf(emptyList())
+            }
+        }.distinctUntilChanged().flatMapLatest { sources ->
             if (sources.isEmpty()) {
                 flowOf(emptyList<ProviderChannels>())
             } else {
@@ -214,12 +218,25 @@ internal class SportsHubRepository @Inject constructor(
                     }.distinctUntilChanged().flowOn(Dispatchers.Default)
                 }) { it.toList() }
             }
-        }.distinctUntilChanged().retryWhen { _, _ ->
+        }.distinctUntilChanged().onEach { providers ->
+            val entries = withContext(Dispatchers.Default) {
+                providers.flatMap { provider ->
+                    provider.channels.map { SportsChannelIndexEntry(it, provider.combinedProfileId) }
+                }
+            }
+            fallbackChannelIndexCache = null
+            availableChannelEntries = entries
+            _uiState.update { it.copy(events = emptyList(), leagueChannels = emptyMap(), isLoading = true, hasError = false) }
+        }.retryWhen { _, _ ->
             val failedRequest = retryRequest.value
             _uiState.update { it.copy(isLoading = false, hasError = true) }
             retryRequest.first { it != failedRequest }
             _uiState.update { it.copy(isLoading = true, hasError = false) }
             true
+        }.shareIn(scope, SharingStarted.Eagerly, replay = 1)
+
+        scope.launch {
+            channelSnapshots.collectLatest(::publishChannelDirectory)
         }
 
         var previousInputs: SportsLoadInputs? = null
@@ -266,24 +283,7 @@ internal class SportsHubRepository @Inject constructor(
                 if (previousInputs != inputs) {
                     eventIndexCache.clear()
                     if (previousInputs?.retry != inputs.retry) classificationCache.clear()
-                    val channelsChanged = previousInputs?.providers != inputs.providers
-                    _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false,
-                        leagueChannels = if (channelsChanged) emptyMap() else it.leagueChannels) }
-                    if (channelsChanged) {
-                        fallbackChannelIndexCache = null
-                        availableChannelEntries = emptyList()
-                        val (entries, directory) = withContext(Dispatchers.Default) {
-                            val entries = inputs.providers.flatMap { provider ->
-                                provider.channels.map { SportsChannelIndexEntry(it, provider.combinedProfileId) }
-                            }
-                            val directory = inputs.providers.flatMap { provider ->
-                                taggedSportsChannels(provider.channels, provider.combinedProfileId)
-                            }.groupBy({ it.first }, { (league, broadcast) -> SportsDirectoryChannel(league, broadcast) })
-                            entries to directory
-                        }
-                        availableChannelEntries = entries
-                        _uiState.update { it.copy(leagueChannels = directory) }
-                    }
+                    _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false) }
                     previousInputs = inputs
                 }
                 if (active) {
@@ -354,7 +354,9 @@ internal class SportsHubRepository @Inject constructor(
         _uiState.update { state ->
             val selectedLeague = state.selectedLeagueFilter?.takeIf { league ->
                 state.events.any { event -> event.leagueFilterKey == league && event.matches(filter) } ||
-                    (state.selectedTimeRange == SportsTimeRange.ON_NOW && state.leagueChannels.keys.any { it.id == league && it.sport.matches(filter) })
+                    state.leagueChannels.inTimeRange(state.selectedTimeRange, state.nowMillis).keys.any {
+                        it.id == league && it.sport.matches(filter)
+                    }
             }
             state.copy(selectedSportFilter = filter, selectedLeagueFilter = selectedLeague)
         }
@@ -624,7 +626,9 @@ internal class SportsHubRepository @Inject constructor(
         val currentState = _uiState.value
         val selectedLeague = currentState.selectedLeagueFilter?.takeIf { league ->
             presentedEvents.any { event -> event.leagueFilterKey == league && event.matches(currentState.selectedSportFilter) } ||
-                (range == SportsTimeRange.ON_NOW && currentState.leagueChannels.keys.any { it.id == league && it.sport.matches(currentState.selectedSportFilter) })
+                currentState.leagueChannels.inTimeRange(range, now).keys.any {
+                    it.id == league && it.sport.matches(currentState.selectedSportFilter)
+                }
         }
         _uiState.value = currentState.copy(
             isLoading = false,
@@ -866,18 +870,25 @@ internal class SportsHubRepository @Inject constructor(
         }
     }
 
-    private suspend fun resolveProviderSources(source: ActiveLiveSource?): List<Pair<Long, Long?>> = when (source) {
-        is ActiveLiveSource.ProviderSource -> listOf(source.providerId to null)
-        is ActiveLiveSource.CombinedM3uSource -> combinedM3uRepository.getProfile(source.profileId)
-            ?.members
-            .orEmpty()
-            .asSequence()
-            .filter { it.enabled }
-            .sortedBy { it.priority }
-            .map { member -> member.providerId to source.profileId }
-            .distinctBy { it.first }
-            .toList()
-        null -> emptyList()
+    private suspend fun publishChannelDirectory(providers: List<ProviderChannels>) = withContext(Dispatchers.Default) {
+        val directory = linkedMapOf<SportsLeague, MutableList<SportsDirectoryChannel>>()
+        var publishedFirstRows = false
+        for (provider in providers) {
+            for (offset in provider.channels.indices step DIRECTORY_BATCH_SIZE) {
+                ensureActive()
+                val end = minOf(offset + DIRECTORY_BATCH_SIZE, provider.channels.size)
+                val batch = provider.channels.subList(offset, end)
+                for ((league, broadcast) in taggedSportsChannels(batch, provider.combinedProfileId)) {
+                    directory.getOrPut(league) { mutableListOf() }.add(SportsDirectoryChannel(league, broadcast))
+                }
+                if (!publishedFirstRows && directory.isNotEmpty()) {
+                    val firstRows = directory.mapValues { it.value.toList() }
+                    withContext(Dispatchers.Main.immediate) { _uiState.update { it.copy(leagueChannels = firstRows) } }
+                    publishedFirstRows = true
+                }
+            }
+        }
+        withContext(Dispatchers.Main.immediate) { _uiState.update { it.copy(leagueChannels = directory) } }
     }
 
     private suspend fun loadProviderCandidates(
@@ -1110,6 +1121,7 @@ internal class SportsHubRepository @Inject constructor(
     )
 
     private companion object {
+        const val DIRECTORY_BATCH_SIZE = 256
         const val PROVIDER_LOAD_TIMEOUT_MS = 25_000L
         const val ENRICHMENT_TIMEOUT_MS = 5_000L
         const val EVENT_INDEX_CACHE_TTL_MS = 5 * 60_000L

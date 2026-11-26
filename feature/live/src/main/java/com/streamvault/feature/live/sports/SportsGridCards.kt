@@ -78,12 +78,14 @@ internal data class SportsFeedTile(
     val fixture: SportsFeedLabel?,
     val isLive: Boolean = false,
     val listing: SportsPlaylistEvent? = null,
+    val listedStartMillis: Long? = null,
 )
 
 @Composable
-internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick: () -> Unit) {
+internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, opensGuide: Boolean, onClick: () -> Unit) {
     val channel = feed.broadcast.channel
-    val action = stringResource(R.string.live_sports_play_channel_content_description, channel.name)
+    val action = if (opensGuide) "${stringResource(R.string.nav_epg)} · ${channel.name}"
+        else stringResource(R.string.live_sports_play_channel_content_description, channel.name)
     val fixture = feed.fixture
     val listedTime = fixture?.schedule ?: feed.listing?.schedule
     TvClickableSurface(
@@ -122,7 +124,8 @@ internal fun SportsFeedCard(league: SportsLeague, feed: SportsFeedTile, onClick:
                 Text(listedTime ?: stringResource(R.string.nav_live_tv), modifier = Modifier.weight(1f),
                     color = if (listedTime != null) sportsAccent else BrowseColors.TextSecondary,
                     fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(16.dp), tint = BrowseColors.TextSecondary)
+                Icon(if (opensGuide) Icons.Default.DateRange else Icons.Default.PlayArrow,
+                    null, modifier = Modifier.size(16.dp), tint = BrowseColors.TextSecondary)
             }
         }
     }

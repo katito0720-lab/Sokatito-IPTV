@@ -199,10 +199,10 @@ internal fun SportsHubContent(
         state.events.filter { it.matchesDiscovery(state, searchTerms) }
     }
     val eflChampionshipLabel = stringResource(R.string.live_sports_league_efl_championship)
-    val channelLeagues = remember(state.leagueChannels, state.selectedTimeRange, state.selectedSportFilter,
+    val today = Instant.ofEpochMilli(state.nowMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+    val channelLeagues = remember(state.leagueChannels, state.selectedTimeRange, today, state.selectedSportFilter,
         state.excludedSports, state.excludedLeagues) {
-        if (state.selectedTimeRange != SportsTimeRange.ON_NOW) emptyMap()
-        else state.leagueChannels.filterKeys { league ->
+        state.leagueChannels.inTimeRange(state.selectedTimeRange, state.nowMillis).filterKeys { league ->
             league.sport.matches(state.selectedSportFilter) && league.sport.discoveryKey !in state.excludedSports &&
                 league.id !in state.excludedLeagues
         }
@@ -359,7 +359,16 @@ internal fun SportsHubContent(
             }
             gridItems(if (overview) channels.take(3) else channels,
                 key = { "feed:${league.id}:${it.broadcast.channelIdentityKey()}" }) { feed ->
-                SportsFeedCard(league, feed) { onPlayBroadcast(feed.broadcast) }
+                val start = feed.listedStartMillis
+                val showGuide = state.selectedTimeRange != SportsTimeRange.ON_NOW && start != null && start > state.nowMillis
+                SportsFeedCard(league, feed, opensGuide = showGuide) {
+                    if (showGuide && start != null && start > System.currentTimeMillis()) {
+                        onOpenGuide(AppDestination.Guide(
+                            categoryId = feed.broadcast.channel.categoryId.takeIf { feed.broadcast.combinedProfileId == null },
+                            anchorTimeMs = start,
+                        ))
+                    } else onPlayBroadcast(feed.broadcast)
+                }
             }
         }
     }

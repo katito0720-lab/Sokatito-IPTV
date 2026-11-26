@@ -2,10 +2,31 @@ package com.streamvault.feature.live.sports
 
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.Channel
+import java.time.Instant
+import java.time.ZoneId
 import org.junit.Test
 
 class SportsChannelDirectoryTest {
     private val channel = Channel(id = 1, name = "Arena HD", providerId = 7, streamUrl = "https://example.test/live")
+
+    @Test fun datedPlaylistFixturesPopulateLocalDayAndNextWeekWithoutGuideData() {
+        val channels = listOf(
+            "Next | 2027-01-01 | 01:30 (GMT) | Team A vs Team B | Premier League | Arena",
+            "Next | 2027-01-01 | 10:00 (GMT) | Team C vs Team D | Premier League | Arena",
+            "Next | 2027-01-08 | 05:00 (GMT) | Team E vs Team F | Premier League | Arena",
+            "Sky - Premier League"
+        ).mapIndexed { index, name -> channel.copy(id = index + 1L, name = name) }
+        val directory = taggedSportsChannels(channels, null).groupBy({ it.first }, { (league, broadcast) ->
+            SportsDirectoryChannel(league, broadcast)
+        })
+        val now = Instant.parse("2026-12-31T14:00:00Z").toEpochMilli()
+        fun channelIds(range: SportsTimeRange) = directory.inTimeRange(range, now, ZoneId.of("America/New_York"))
+            .values.flatten().map { it.tile.broadcast.channel.id }
+
+        assertThat(channelIds(SportsTimeRange.TODAY)).containsExactly(1L)
+        assertThat(channelIds(SportsTimeRange.UPCOMING)).containsExactly(2L)
+        assertThat(channelIds(SportsTimeRange.ON_NOW)).containsExactly(1L, 2L, 3L, 4L)
+    }
 
     @Test fun `channel names take priority over groups and include numbered feeds`() {
         val feeds = listOf(channel.copy(name = "US | NBA01", groupTitle = "EPL"),

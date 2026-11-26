@@ -243,8 +243,12 @@ class SportsHubViewModelTest {
         await { !model.uiState.value.isLoading }
         val firstReads = programmeReads.get()
 
-        scheduler.advanceTimeBy(60_001L)
-        await { programmeReads.get() > firstReads && !model.uiState.value.isLoading }
+        await {
+            // The first guide result can arrive while enrichment is still running.
+            // Advance the next clock tick once the current read has had a chance to finish.
+            if (programmeReads.get() == firstReads) scheduler.advanceTimeBy(60_001L)
+            programmeReads.get() > firstReads && !model.uiState.value.isLoading
+        }
 
         assertThat(subscriptions.get()).isEqualTo(1)
         assertThat(model.uiState.value.events).hasSize(1)
@@ -293,6 +297,22 @@ class SportsHubViewModelTest {
     }
 
     @Test
+    fun `playlist channels and guide events load before optional guide revisions arrive`() = runBlocking {
+        val delayedRevision = CompletableDeferred<Unit>()
+        whenever(sources.getAllSources()).thenReturn(flow {
+            delayedRevision.await()
+            emit(emptyList())
+        })
+        channelRows.value = listOf(channel.copy(name = "NBA 01"))
+        val model = createModel()
+
+        await { model.uiState.value.leagueChannels.isNotEmpty() && model.uiState.value.events.isNotEmpty() }
+        assertThat(model.uiState.value.leagueChannels.values.flatten().map { it.tile.broadcast.channel.id })
+            .containsExactly(channel.id)
+        assertThat(subscriptions.get()).isEqualTo(1)
+    }
+
+    @Test
     fun `retry recovers a failed initial channel subscription`() = runBlocking {
         val attempts = AtomicInteger()
         whenever(channels.getChannels(7L)).thenReturn(flow {
@@ -336,7 +356,7 @@ class SportsHubViewModelTest {
         val model = createModel(createRepository(registry))
         withTimeout(10_000L) { started.await() }
 
-        assertThat(model.uiState.value.isLoading).isFalse()
+        await { !model.uiState.value.isLoading }
         assertThat(model.uiState.value.events).hasSize(1)
         assertThat(model.uiState.value.events.single().broadcasts.single().channel.id).isEqualTo(1L)
         gate.complete(Unit)

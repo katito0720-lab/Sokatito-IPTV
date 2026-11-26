@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.streamvault.domain.model.Channel
 import com.streamvault.feature.live.R
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Locale
 
 private val numberedLeagueFeed = Regex("""\b(nba|wnba|epl|nfl|nhl|mlb)(?=\d)""", RegexOption.IGNORE_CASE)
@@ -47,7 +49,27 @@ internal data class SportsDirectoryChannel(
 private fun SportsBroadcast.toDirectoryTile(): SportsFeedTile {
     val label = channel.sportsProviderLabel
     val listing = parsePlaylistSportsEvent(label)
-    return SportsFeedTile(this, parseSportsFeedLabel(label, listing), listing = listing)
+    val fixture = parseSportsFeedLabel(label, listing)
+    val start = (fixture?.schedule ?: listing?.schedule)?.let { listedSportsStart(it, Instant.now(), ZoneId.systemDefault()) }
+    return SportsFeedTile(this, fixture, listing = listing, listedStartMillis = start)
+}
+
+internal fun Map<SportsLeague, List<SportsDirectoryChannel>>.inTimeRange(
+    range: SportsTimeRange,
+    nowMillis: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+): Map<SportsLeague, List<SportsDirectoryChannel>> {
+    if (range == SportsTimeRange.ON_NOW) return this
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
+    val tomorrow = today.plusDays(1)
+    val firstDay = if (range == SportsTimeRange.TODAY) today else tomorrow
+    val untilDay = if (range == SportsTimeRange.TODAY) tomorrow else tomorrow.plusDays(7)
+    val from = firstDay.atStartOfDay(zone).toInstant().toEpochMilli()
+    val until = untilDay.atStartOfDay(zone).toInstant().toEpochMilli()
+    return mapValues { (_, rows) ->
+        rows.filter { it.tile.listedStartMillis?.let { start -> start >= from && start < until } == true }
+            .sortedBy { it.tile.listedStartMillis }
+    }.filterValues { it.isNotEmpty() }
 }
 
 private fun channelLeague(label: String): SportsLeague? {
